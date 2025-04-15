@@ -876,4 +876,12 @@ def print_strings(string_list):
 
 
 if __name__ == '__main__':
-    run()
+    sv=1234567890
+    random.seed(sv)
+    y=random.randint(0,6)
+    while y != 0:
+        sv += 1
+        random.seed(sv)
+        y=random.randint(0,6)
+    print(f"Seed Value to get 0 ; {sv}")
+    # run()
