@@ -640,8 +640,8 @@ def navigation():
             y = 0
         elif y > 63:
             y = 63
-        quad_x = int(round(x)) / 8
-        quad_y = int(round(y)) / 8
+        quad_x = int(round(x) / 8)
+        quad_y = int(round(y) / 8)
         game.sector_x = int(round(x)) % 8
         game.sector_y = int(round(y)) % 8
         if quad_x != game.quadrant_x or quad_y != game.quadrant_y:
@@ -690,6 +690,15 @@ def input_double(prompt):
     text = input(prompt)
     try:
         value = float(text)
+        return value
+    except: # Most likely a ValueError
+        return False
+
+# TODO: I added this, but it may not be needed, in which case it should be taken back out.
+def input_int(prompt):
+    text = input(prompt)
+    try:
+        value = int(text)
         return value
     except: # Most likely a ValueError
         return False
@@ -876,12 +885,6 @@ def print_strings(string_list):
 
 
 if __name__ == '__main__':
-    sv=1234567890
-    random.seed(sv)
-    y=random.randint(0,6)
-    while y != 0:
-        sv += 1
-        random.seed(sv)
-        y=random.randint(0,6)
-    print(f"Seed Value to get 0 ; {sv}")
-    # run()
+    # sv=1234567890
+    # random.seed(sv)
+    run()

@@ -8,6 +8,7 @@ from unittest.mock import patch
 # local imports
 from startrek import Quadrant, SectorType, KlingonShip, Game, game, induce_damage, initialize_game, repair_damage
 from startrek import distance, compute_direction, print_game_status, command_prompt, navigation_calculator
+from startrek import input_double, input_int
 
 class Test_test_startrek(unittest.TestCase):
 
@@ -513,6 +514,168 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'bas' command to the computer,
+    # when the current quadrant does not include a starbase
+    @patch('sys.stdin', StringIO('com\nbas\n'))
+    def test_starbase_calculator_no_starbase(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='There are no starbases in this quadrant.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command to move to a quadrant with a starbase.
+    # Then a 'com' command, then a 'bas' command to the computer, when the current quadrant includes a starbase
+    @patch('sys.stdin', StringIO('nav\n6\n1\ncom\nbas\n'))
+    def test_starbase_calculator(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with starbase
+        gm=game
+        initialize_game()
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Ask the computer for a starbase computation
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Starbase in sector [5,7].\n'
+        exp_val+='Direction: 4.00\n'
+        exp_val+='Distance:  0.18'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'tor' command to the computer,
+    # when the current quadrant does not include any klingons
+    @patch('sys.stdin', StringIO('com\ntor\n'))
+    def test_torpedo_calculator_no_klingons(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='There are no Klingon ships in this quadrant.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command to move to a quadrant with a klingon.
+    # Then a 'com' command, then a 'tor' command to the computer, when the current quadrant includes a klingon
+    @patch('sys.stdin', StringIO('com\ntor\n'))
+    def test_torpedo_calculator_klingon(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Ask the computer for a starbase computation
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Direction 3.48: Klingon ship in sector [4,3].'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'sta' command to the computer
+    @patch('sys.stdin', StringIO('com\nsta\n'))
+    def test_display_status(self):
+        self.maxDiff=None
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='               Time Remaining: 41\n'
+        exp_val+='      Klingon Ships Remaining: 18\n'
+        exp_val+='                    Starbases: 2\n'
+        exp_val+='           Warp Engine Damage: 0\n'
+        exp_val+='   Short Range Scanner Damage: 0\n'
+        exp_val+='    Long Range Scanner Damage: 0\n'
+        exp_val+='       Shield Controls Damage: 0\n'
+        exp_val+='         Main Computer Damage: 0\n'
+        exp_val+='Photon Torpedo Control Damage: 0\n'
+        exp_val+='                Phaser Damage: 0'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+
     # TODO: Also check that repair messages are printed
     def test_repair_damage(self):
         gm=game
@@ -721,6 +884,36 @@ class Test_test_startrek(unittest.TestCase):
         exp_val=2
         act_val=compute_direction(2,7,4,5)
         self.assertAlmostEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in valid input of a float
+    @patch('sys.stdin', StringIO('7.56\n'))
+    def test_input_double(self):
+        exp_val=7.56
+        act_val=input_double('Enter a valid floating point number:')
+        self.assertAlmostEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in invalid input
+    @patch('sys.stdin', StringIO('foo\n'))
+    def test_input_double_invalid(self):
+        act_val=input_double('Enter a valid floating point number:')
+        self.assertFalse(act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in valid input of an integer
+    @patch('sys.stdin', StringIO('7\n'))
+    def test_input_int(self):
+        exp_val=7
+        act_val=input_int('Enter a valid integer number:')
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in an invalid input
+    @patch('sys.stdin', StringIO('7.5\n'))
+    def test_input_int(self):
+        act_val=input_int('Enter a valid integer number:')
+        self.assertFalse(act_val)
 
 
 if __name__ == '__main__':
