@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 # local imports
 from startrek import Quadrant, SectorType, KlingonShip, Game, game, induce_damage, initialize_game, repair_damage
-from startrek import distance, compute_direction, print_game_status, command_prompt
+from startrek import distance, compute_direction, print_game_status, command_prompt, navigation_calculator
 
 class Test_test_startrek(unittest.TestCase):
 
@@ -225,13 +225,15 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='bas = Starbase Calculator\n'
         exp_val+='nav = Navigation Calculator\n'
         exp_val+='Enter computer command: '
-        exp_val+='Invalid computer command.'
+        exp_val+='Invalid computer command.\n'
         exp_val+='The main computer is malfunctioning.'
         command_prompt()
         # Get the captured output
         act_val = captured_output.getvalue().strip()
         # Reset the standard output
         sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
         # Now test that damage was induced
         self.assertTrue(gm.computer_damage>0)
 
@@ -254,8 +256,262 @@ class Test_test_startrek(unittest.TestCase):
         act_val = captured_output.getvalue().strip()
         # Reset the standard output
         sys.stdout = sys.__stdout__
-        # Now test that damage was induced
-        self.assertTrue(gm.computer_damage>0)
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'nav' command to the computer,
+    # followed by acceptable navigation calculator inputs
+    @patch('sys.stdin', StringIO('com\nnav\n6\n5\n'))
+    def test_navigation_calculator(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Enterprise located in quadrant [3,8].\n'
+        exp_val+='Enter destination quadrant X (1--8): '
+        exp_val+='Enter destination quadrant Y (1--8): '
+        exp_val+='Direction: 2.00\n'
+        exp_val+='Distance:  4.24'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'nav' command to the computer,
+    # followed by entering quadrant that is current enterprise location
+    @patch('sys.stdin', StringIO('com\nnav\n3\n8\n'))
+    def test_navigation_calculator_current_enterprise_location(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Enterprise located in quadrant [3,8].\n'
+        exp_val+='Enter destination quadrant X (1--8): '
+        exp_val+='Enter destination quadrant Y (1--8): '
+        exp_val+='That is the current location of the Enterprise.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'nav' command to the computer,
+    # followed by entering x quadrant =0 that is invalid
+    @patch('sys.stdin', StringIO('com\nnav\n0\n'))
+    def test_navigation_calculator_invalid_X_0(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Enterprise located in quadrant [3,8].\n'
+        exp_val+='Enter destination quadrant X (1--8): '
+        exp_val+='Invalid X coordinate.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'nav' command to the computer,
+    # followed by entering x quadrant =9 that is invalid
+    @patch('sys.stdin', StringIO('com\nnav\n9\n'))
+    def test_navigation_calculator_invalid_X_9(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Enterprise located in quadrant [3,8].\n'
+        exp_val+='Enter destination quadrant X (1--8): '
+        exp_val+='Invalid X coordinate.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'nav' command to the computer,
+    # followed by entering x quadrant ='foo' that is invalid because it isn't a float
+    @patch('sys.stdin', StringIO('com\nnav\nfoo\n'))
+    def test_navigation_calculator_invalid_X_not_float(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Enterprise located in quadrant [3,8].\n'
+        exp_val+='Enter destination quadrant X (1--8): '
+        exp_val+='Invalid X coordinate.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'nav' command to the computer,
+    # followed by entering y quadrant =0 that is invalid
+    @patch('sys.stdin', StringIO('com\nnav\n3\n0\n'))
+    def test_navigation_calculator_invalid_Y_0(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Enterprise located in quadrant [3,8].\n'
+        exp_val+='Enter destination quadrant X (1--8): '
+        exp_val+='Enter destination quadrant Y (1--8): '
+        exp_val+='Invalid Y coordinate.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'nav' command to the computer,
+    # followed by entering y quadrant =9 that is invalid
+    @patch('sys.stdin', StringIO('com\nnav\n3\n9\n'))
+    def test_navigation_calculator_invalid_Y_9(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Enterprise located in quadrant [3,8].\n'
+        exp_val+='Enter destination quadrant X (1--8): '
+        exp_val+='Enter destination quadrant Y (1--8): '
+        exp_val+='Invalid Y coordinate.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 'com' command, then a 'nav' command to the computer,
+    # followed by entering y quadrant ='foo' that is invalid because it isn't a float
+    @patch('sys.stdin', StringIO('com\nnav\n3\nfoo\n'))
+    def test_navigation_calculator_invalid_Y_not_float(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='Enterprise located in quadrant [3,8].\n'
+        exp_val+='Enter destination quadrant X (1--8): '
+        exp_val+='Enter destination quadrant Y (1--8): '
+        exp_val+='Invalid Y coordinate.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
     # TODO: Also check that repair messages are printed
     def test_repair_damage(self):

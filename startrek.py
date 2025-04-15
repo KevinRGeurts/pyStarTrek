@@ -688,10 +688,10 @@ def navigation():
 
 def input_double(prompt):
     text = input(prompt)
-    value = float(text)
-    if type(value) == float:
+    try:
+        value = float(text)
         return value
-    else:
+    except: # Most likely a ValueError
         return False
 
 
