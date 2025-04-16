@@ -8,7 +8,7 @@ from unittest.mock import patch
 # local imports
 from startrek import Quadrant, SectorType, KlingonShip, Game, game, induce_damage, initialize_game, repair_damage
 from startrek import distance, compute_direction, print_game_status, command_prompt, navigation_calculator
-from startrek import input_double, input_int
+from startrek import input_double, input_int, phaser_controls, sector_type, generate_sector
 
 class Test_test_startrek(unittest.TestCase):
 
@@ -103,23 +103,6 @@ class Test_test_startrek(unittest.TestCase):
         gm=game
         gm.destroyed=True
         exp_val='MISSION FAILED: ENTERPRISE DESTROYED!!!'
-        print_game_status()
-        # Get the captured output
-        act_val = captured_output.getvalue().strip()
-        # Reset the standard output
-        sys.stdout = sys.__stdout__
-        # Assert the output matches the expected value
-        self.assertEqual(exp_val, act_val)
-
-    def test_print_game_status_outofenergy(self):
-        # Redirect standard output to a buffer
-        captured_output = StringIO()
-        sys.stdout = captured_output
-        # Run the test
-        gm=game
-        initialize_game()
-        gm.energy=0
-        exp_val='MISSION FAILED: ENTERPRISE RAN OUT OF ENERGY.'
         print_game_status()
         # Get the captured output
         act_val = captured_output.getvalue().strip()
@@ -589,6 +572,7 @@ class Test_test_startrek(unittest.TestCase):
         # Run the test
         gm=game
         initialize_game()
+        generate_sector()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
         exp_val+='rec = Cumulative Galatic Record\n'
@@ -609,7 +593,7 @@ class Test_test_startrek(unittest.TestCase):
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in issuing a 'nav' command to move to a quadrant with a klingon.
     # Then a 'com' command, then a 'tor' command to the computer, when the current quadrant includes a klingon
-    @patch('sys.stdin', StringIO('com\ntor\n'))
+    @patch('sys.stdin', StringIO('nav\n6\n1\ncom\ntor\n'))
     def test_torpedo_calculator_klingon(self):
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
@@ -619,7 +603,7 @@ class Test_test_startrek(unittest.TestCase):
         # Redirect standard output to a buffer
         captured_output = StringIO()
         sys.stdout = captured_output
-        # Ask the computer for a starbase computation
+        # Ask the computer for a photon torpedo computation
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
         exp_val+='rec = Cumulative Galatic Record\n'
@@ -675,6 +659,423 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'lrs' command to scan part of the galactic record,
+    # Then a 'com' command, then a 'rec' command to the computer.
+    @patch('sys.stdin', StringIO('lrs\ncom\nrec\n'))
+    def test_display_galactic_record(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        # With this command_prompt() call, we will request a long range scan
+        command_prompt()
+        # Next, we will ask the computer for the galactic record
+        exp_val='Enter command: '
+        exp_val+='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator\n'
+        exp_val+='Enter computer command: '
+        exp_val+='-------------------------------------------------\n'
+        exp_val+='| 000 | 000 | 000 | 000 | 000 | 000 | 000 | 000 |\n'
+        exp_val+='-------------------------------------------------\n'
+        exp_val+='| 000 | 000 | 000 | 000 | 000 | 000 | 000 | 000 |\n'
+        exp_val+='-------------------------------------------------\n'
+        exp_val+='| 000 | 000 | 000 | 000 | 000 | 000 | 000 | 000 |\n'
+        exp_val+='-------------------------------------------------\n'
+        exp_val+='| 000 | 000 | 000 | 000 | 000 | 000 | 000 | 000 |\n'
+        exp_val+='-------------------------------------------------\n'
+        exp_val+='| 000 | 000 | 000 | 000 | 000 | 000 | 000 | 000 |\n'
+        exp_val+='-------------------------------------------------\n'
+        exp_val+='| 000 | 000 | 000 | 000 | 000 | 000 | 000 | 000 |\n'
+        exp_val+='-------------------------------------------------\n'
+        exp_val+='| 000 | 113 | 008 | 006 | 000 | 000 | 000 | 000 |\n'
+        exp_val+='-------------------------------------------------\n'
+        exp_val+='| 000 | 112 | 007 | 008 | 000 | 000 | 000 | 000 |\n'
+        exp_val+='-------------------------------------------------'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    def test_phaser_controls_damaged(self):
+        gm=game
+        initialize_game()
+        gm.phaser_damage=1
+        exp_val='Phasers are damaged. Repairs are underway.'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Call for phasers
+        phaser_controls()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    def test_phaser_controls_no_klingons(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        exp_val='There are no Klingon ships in this quadrant.'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Call for phasers
+        phaser_controls()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command to move to a quadrant with a klingon.
+    # Then a 'pha' command, then request an invalid phaser energy ('foo').
+    @patch('sys.stdin', StringIO('nav\n6\n1\npha\nfoo\n'))
+    def test_phaser_controls_klingon_invalid_phaser_energy(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Fire phasers
+        exp_val='Enter command: '
+        exp_val+='Phasers locked on target.\n'
+        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Invalid energy level.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command to move to a quadrant with a klingon.
+    # Then a 'pha' command, then request a too low phaser energy (0).
+    @patch('sys.stdin', StringIO('nav\n6\n1\npha\n0\n'))
+    def test_phaser_controls_klingon_too_low_phaser_energy(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Fire phasers
+        exp_val='Enter command: '
+        exp_val+='Phasers locked on target.\n'
+        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Invalid energy level.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command to move to a quadrant with a klingon.
+    # Then a 'pha' command, then request a too high phaser energy (5000).
+    @patch('sys.stdin', StringIO('nav\n6\n1\npha\n5000\n'))
+    def test_phaser_controls_klingon_too_high_phaser_energy(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Fire phasers
+        exp_val='Enter command: '
+        exp_val+='Phasers locked on target.\n'
+        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Invalid energy level.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command to move to a quadrant with a klingon.
+    # Then a 'pha' command, then phaser energy level 2000, resulting in klingon destruction.
+    @patch('sys.stdin', StringIO('nav\n6\n1\npha\n2000\n'))
+    def test_phaser_controls_klingon_destroyed(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Fire phasers
+        exp_val='Enter command: '
+        exp_val+='Phasers locked on target.\n'
+        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Firing phasers...\n'
+        exp_val+='Klingon ship destroyed at sector [4,3].'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+        # Assert some stuff indicating that the destroyed klingon has been removed from the game.
+        self.assertTrue(gm.klingons==17)
+        self.assertTrue(gm.quadrants[gm.quadrant_y][gm.quadrant_x].klingons==0)
+        self.assertTrue(len(gm.klingon_ships)==0)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command to move to a quadrant with a klingon.
+    # Then a 'pha' command, then phaser energy level 500, resulting in klingon damaged.
+    @patch('sys.stdin', StringIO('nav\n6\n1\npha\n500\n'))
+    def test_phaser_controls_klingon_damaged(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Fire phasers
+        exp_val='Enter command: '
+        exp_val+='Phasers locked on target.\n'
+        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Firing phasers...\n'
+        exp_val+='Hit ship at sector [4,3]. Klingon shield strength dropped to 170.\n'
+        exp_val+='Enterprise hit by ship at sector [4,3]. No damage due to starbase shields.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    @patch('sys.stdin', StringIO('she\nfoo\n'))
+    def test_shield_controls_invalid_command(self):
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'she' command, then an invalid ('foo') shield control command
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Adjust shields
+        exp_val='Enter command: '
+        exp_val+='--- Shield Controls ----------------\n'
+        exp_val+='add = Add energy to shields.\n'
+        exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='Enter shield control command: '
+        exp_val+='Invalid command.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    @patch('sys.stdin', StringIO('she\nadd\nfoo\n'))
+    def test_shield_controls_add_energy_invalid(self):
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'she' command, then an 'add' shield control command,
+    # then an invalid amount of energy to add ('foo')
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Adjust shields
+        exp_val='Enter command: '
+        exp_val+='--- Shield Controls ----------------\n'
+        exp_val+='add = Add energy to shields.\n'
+        exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='Enter shield control command: '
+        exp_val+='Enter amount of energy (1--3000): '
+        exp_val+='Invalid amount of energy.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    @patch('sys.stdin', StringIO('she\nadd\n5000\n'))
+    def test_shield_controls_add_energy_too_high(self):
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'she' command, then an 'add' shield control command,
+    # then an invalid amount of energy to add (5000) because it is too high
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Fire adjust shields
+        exp_val='Enter command: '
+        exp_val+='--- Shield Controls ----------------\n'
+        exp_val+='add = Add energy to shields.\n'
+        exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='Enter shield control command: '
+        exp_val+='Enter amount of energy (1--3000): '
+        exp_val+='Invalid amount of energy.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    @patch('sys.stdin', StringIO('she\nadd\n0\n'))
+    def test_shield_controls_add_energy_too_low(self):
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'she' command, then an 'add' shield control command,
+    # then an invalid amount of energy to add (0) because it is too low
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Adjust shields
+        exp_val='Enter command: '
+        exp_val+='--- Shield Controls ----------------\n'
+        exp_val+='add = Add energy to shields.\n'
+        exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='Enter shield control command: '
+        exp_val+='Enter amount of energy (1--3000): '
+        exp_val+='Invalid amount of energy.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    @patch('sys.stdin', StringIO('she\nadd\n500\n'))
+    def test_shield_controls_add(self):
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'she' command, then an 'add' shield control command,
+    # then a valid amount of energy to add (500)
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Adjust shields
+        exp_val='Enter command: '
+        exp_val+='--- Shield Controls ----------------\n'
+        exp_val+='add = Add energy to shields.\n'
+        exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='Enter shield control command: '
+        exp_val+='Enter amount of energy (1--3000): '
+        exp_val+='Shield strength is now 500. Energy level is now 2500.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    @patch('sys.stdin', StringIO('she\nadd\n500\nshe\nsub\n250\n'))
+    def test_shield_controls_sub(self):
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'she' command, then an 'add' shield control command,
+    # then a valid amount of energy to add (500). The a 'she', 'sub' to subtract 250.
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        # This command_prompt() will eat the she/add/500 sequence
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Adjust shields
+        exp_val='Enter command: '
+        exp_val+='--- Shield Controls ----------------\n'
+        exp_val+='add = Add energy to shields.\n'
+        exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='Enter shield control command: '
+        exp_val+='Enter amount of energy (1--500): '
+        exp_val+='Shield strength is now 250. Energy level is now 2750.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    @patch('sys.stdin', StringIO('she\nadd\n500\nshe\nsub\n600\n'))
+    def test_shield_controls_sub_invalid(self):
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'she' command, then an 'add' shield control command,
+    # then a valid amount of energy to add (500). The a 'she', 'sub' to subtract an amount that exceeds 500.
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with klingon
+        gm=game
+        initialize_game()
+        # This command_prompt() will eat the she/add/500 sequence
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Adjust shields
+        exp_val='Enter command: '
+        exp_val+='--- Shield Controls ----------------\n'
+        exp_val+='add = Add energy to shields.\n'
+        exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='Enter shield control command: '
+        exp_val+='Enter amount of energy (1--500): '
+        exp_val+='Invalid amount of energy.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
     # TODO: Also check that repair messages are printed
     def test_repair_damage(self):

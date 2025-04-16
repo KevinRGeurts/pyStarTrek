@@ -321,7 +321,6 @@ def shield_controls():
     print("add = Add energy to shields.")
     print("sub = Subtract energy from shields.")
     print
-    print("Enter shield control command: ")
     command = input("Enter shield control command: ").strip().lower()
     print
     if command == "add":
@@ -885,6 +884,6 @@ def print_strings(string_list):
 
 
 if __name__ == '__main__':
-    # sv=1234567890
-    # random.seed(sv)
+    sv=1234567890
+    random.seed(sv)
     run()
