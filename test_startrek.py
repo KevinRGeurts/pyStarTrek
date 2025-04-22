@@ -1,4 +1,5 @@
 # standard imports
+from encodings.punycode import generate_generalized_integer
 import unittest
 import random
 import sys
@@ -877,6 +878,7 @@ class Test_test_startrek(unittest.TestCase):
         # Start the game and navigate to quadrant with klingon
         gm=game
         initialize_game()
+        generate_sector()
         command_prompt()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -884,10 +886,10 @@ class Test_test_startrek(unittest.TestCase):
         # Fire phasers
         exp_val='Enter command: '
         exp_val+='Phasers locked on target.\n'
-        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Enter phaser energy (1--2992): '
         exp_val+='Firing phasers...\n'
-        exp_val+='Hit ship at sector [4,3]. Klingon shield strength dropped to 170.\n'
-        exp_val+='Enterprise hit by ship at sector [4,3]. No damage due to starbase shields.'
+        exp_val+='Hit ship at sector [5,1]. Klingon shield strength dropped to 306.\n'
+        exp_val+='Enterprise hit by ship at sector [5,1]. Shields dropped to 0.'
         command_prompt()
         # Get the captured output
         act_val = captured_output.getvalue().strip()
@@ -1107,11 +1109,58 @@ class Test_test_startrek(unittest.TestCase):
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in:
-    #   (1) Navigating to quadrant with klingon and starbase: nav / 6 / 1
-    #   (2) Raising shields so enterprise isn't destroyed before docking: she / add / 1000
-    #   (3) Navigating to dock with the starbase
-    @patch('sys.stdin', StringIO('nav\n6\n1\nshe\nadd\n500\nnav\n1\n.2\n'))
+    #   (1) Raising shields so enterprise isn't destroyed when hit: she / add / 500
+    #   (2) Navigating to quadrant with klingon and starbase: nav / 6 / 1
+    #   (3) Navigating a little in the sector to give klingon opportunity to hit Enterprise: nav / 6 / .1
+    @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n6\n1\nnav\n6\n.1\n'))
+    def test_klingons_attack_Enterprise_hit(self):
+        self.maxDiff=None
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with starbase
+        gm=game
+        initialize_game()
+        generate_sector()
+        # This command_prompt() will eat the she/add/500 sequence
+        command_prompt()
+        # This command_prompt() will eat the nav/6/1 sequence
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Navigate within sector
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Warp engines engaged.\n'
+        exp_val+='-=--=--=--=--=--=--=--=-          Region: Wolf 359\n'
+        exp_val+='            +K+                    Quadrant: [2,8]\n'
+        exp_val+='                                     Sector: [5,8]\n'
+        exp_val+='       *                           Stardate: 2267\n'
+        exp_val+='                             Time remaining: 40\n'
+        exp_val+='                                  Condition: RED\n'
+        exp_val+=' *                                   Energy: 2492\n'
+        exp_val+='                     >S<            Shields: 500\n'
+        exp_val+='            <E>            Photon Torpedoes: 10\n'
+        exp_val+='-=--=--=--=--=--=--=--=-             Docked: False\n'
+        exp_val+='Condition RED: Klingon ship detected.\n'
+        exp_val+='Enterprise hit by ship at sector [5,1]. Shields dropped to 429.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in:
+    #   (1) Raising shields so enterprise isn't destroyed before docking: she / add / 500
+    #   (2) Navigating to quadrant with klingon and starbase: nav / 6 / 1
+    #   (3) Navigating to dock with the starbaose: nav / 1.59 / 0.28
+    #   (4) Sending a torpedo off to nowhere, to give the klingon a chance to fire on docked Enterprise: tor / 3
+    @patch('sys.stdin', StringIO('nav\n6\n1\nshe\nadd\n500\nnav\n1.59\n0.28\ntor\n3\n'))
     def test_klingons_attack_docked(self):
+        self.maxDiff=None
         random.seed(1234567890)
         # Start the game and navigate to quadrant with starbase
         gm=game
@@ -1121,26 +1170,83 @@ class Test_test_startrek(unittest.TestCase):
         command_prompt()
         # This command_prompt() will eat the she/add/500 sequence
         command_prompt()
+        # This command_prompt() will eat the nav/1.59/0.28 sequence
+        command_prompt()
         # Redirect standard output to a buffer
         captured_output = StringIO()
         sys.stdout = captured_output
         # Navigate to dock with starbase
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
-        exp_val+='Enter warp factor (0.1--8.0): '
-        exp_val+='Warp engines engaged.\n'
+        exp_val+='Enter firing direction (1.0--9.0): '
+        exp_val+='Photon torpedo fired...\n'
+        exp_val+='  [8,6]\n'
+        exp_val+='  [8,5]\n'
+        exp_val+='  [8,4]\n'
+        exp_val+='  [8,3]\n'
+        exp_val+='  [8,2]\n'
+        exp_val+='  [8,1]\n'
+        exp_val+='Photon torpedo failed to hit anything.\n'
+        exp_val+='Enterprise hit by ship at sector [5,1]. No damage due to starbase shields.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in:
+    #   (1) Navigating to quadrant with klingon and starbase: nav / 6 / 1
+    #   (2) Raising shields so enterprise isn't destroyed before docking: she / add / 1000
+    #   (3) Photon torpedo the Klingon: tor / 3.18
+    #   At this point, artificially induce damage to all systems, to provide ability to test repair on docking.
+    #   (4) Navigating to dock with the starbaose
+    @patch('sys.stdin', StringIO('nav\n6\n1\nshe\nadd\n500\ntor\n3.18\nnav\n1\n.2\n'))
+    def test_docked_for_repair(self):
+        self.maxDiff=None
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with starbase
+        gm=game
+        initialize_game()
+        generate_sector()
+        # This command_prompt() will eat the nav/6/1 sequence
+        command_prompt()
+        # This command_prompt() will eat the she/add/500 sequence
+        command_prompt()
+        # This command_prompt() will eat firing the photon torpedo
+        command_prompt()
+        # Artificially provide some damage
+        gm.navigation_damage = 1
+        gm.short_range_scan_damage = 1
+        gm.long_range_scan_damage = 1
+        gm.shield_control_damage = 1
+        gm.computer_damage = 1
+        gm.photon_damage = 1
+        gm.phaser_damage = 1
+        gm.shield_level = 1
+        # Check for some damage and less than full torpedo load
+        self.assertEqual(1,gm.navigation_damage)
+        self.assertEqual(9,gm.photon_torpedoes)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Navigate to dock with starbase
+        exp_val='Enter command: '
+        exp_val+='Warp engines damaged. Maximum warp factor: 0.8999999999999999\n'
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter warp factor (0.1--0.8999999999999999): '
+        exp_val+='Warp engines engaged.\n'
         exp_val+='-=--=--=--=--=--=--=--=-          Region: Wolf 359\n'
-        exp_val+='            +K+                    Quadrant: [2,8]\n'
+        exp_val+='                                   Quadrant: [2,8]\n'
         exp_val+='                                     Sector: [7,8]\n'
         exp_val+='       *                           Stardate: 2267\n'
         exp_val+='                             Time remaining: 40\n'
-        exp_val+='                                  Condition: RED\n'
+        exp_val+='                                  Condition: GREEN\n'
         exp_val+=' *                                   Energy: 3000\n'
         exp_val+='                     >S<            Shields: 0\n'
         exp_val+='                  <E>      Photon Torpedoes: 10\n'
         exp_val+='-=--=--=--=--=--=--=--=-             Docked: True\n'
-        exp_val+='Condition RED: Klingon ship detected.\n'
         exp_val+='Lowering shields as part of docking sequence...\n'
         exp_val+='Enterprise successfully docked with starbase.'
         command_prompt()
@@ -1150,6 +1256,17 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = sys.__stdout__
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
+        # Assert that Enterprise has been repaired and restocked
+        self.assertEqual(3000,gm.energy)
+        self.assertEqual(10,gm.photon_torpedoes)
+        self.assertEqual(0,gm.navigation_damage)
+        self.assertEqual(0,gm.short_range_scan_damage)
+        self.assertEqual(0,gm.long_range_scan_damage)
+        self.assertEqual(0,gm.shield_control_damage)
+        self.assertEqual(0,gm.computer_damage)
+        self.assertEqual(0,gm.photon_damage)
+        self.assertEqual(0,gm.phaser_damage)
+        self.assertEqual(0,gm.shield_level)
 
     def test_is_docking_location(self):
         random.seed(1234567890)
@@ -1592,6 +1709,104 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = sys.__stdout__
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val) 
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command, then a valid direction (1), and a
+    # warp factor that is okay from a damage standpoint, but exceeds remaining energy (6).
+    @patch('sys.stdin', StringIO('nav\n1\n6\n'))
+    def test_navigation_insufficent_energy(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        # Set energy very low, so it is insufficent for requested warp factor
+        gm.energy=40
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Attempt navigation with damage
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Unable to comply. Insufficient energy to travel that speed.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command, then a valid direction (1), and a
+    # warp factor that is okay from a damage standpoint, but exceeds remaining energy (6).
+    @patch('sys.stdin', StringIO('nav\n1\n6\n'))
+    def test_navigation_successful(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Attempt navigation with damage
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Warp engines engaged.\n'
+        exp_val+='-=--=--=--=--=--=--=--=-          Region: Tau Alpha C\n'
+        exp_val+='             *                     Quadrant: [8,8]\n'
+        exp_val+='                                     Sector: [8,5]\n'
+        exp_val+='       *                           Stardate: 2267\n'
+        exp_val+='                             Time remaining: 40\n'
+        exp_val+='                     <E>          Condition: GREEN\n'
+        exp_val+=' *                 *                 Energy: 2952\n'
+        exp_val+='                      *             Shields: 0\n'
+        exp_val+='                   *       Photon Torpedoes: 10\n'
+        exp_val+='-=--=--=--=--=--=--=--=-             Docked: False'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command, then a direction (3), and a
+    # warp factor (0.3) that run the Enterprise into a star.
+    @patch('sys.stdin', StringIO('nav\n3\n0.3\n'))
+    def test_navigation_obstacle(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Attempt navigation with damage
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Warp engines engaged.\n'
+        exp_val+='Encountered obstacle within quadrant.\n'
+        exp_val+='-=--=--=--=--=--=--=--=-          Region: Pegos Minor\n'
+        exp_val+='       *                           Quadrant: [3,8]\n'
+        exp_val+='                                     Sector: [4,4]\n'
+        exp_val+='          *                        Stardate: 2266\n'
+        exp_val+='         <E>                 Time remaining: 41\n'
+        exp_val+='                                  Condition: GREEN\n'
+        exp_val+='                *     *              Energy: 2998\n'
+        exp_val+='    *        *     *                Shields: 0\n'
+        exp_val+='                           Photon Torpedoes: 10\n'
+        exp_val+='-=--=--=--=--=--=--=--=-             Docked: False'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
         
     def test_is_sector_region_empty(self):
         random.seed(1234567890)
@@ -1632,6 +1847,32 @@ class Test_test_startrek(unittest.TestCase):
         # Now check some empty regions.
         self.assertTrue(is_sector_region_empty(4,6))  
 
+    def test_run(self):
+        self.assertTrue(False) # Test not yet implemented
+
+    def test_long_range_scan_damaged(self):
+        self.assertTrue(False) # Test not yet implemented
+
+    def test_long_range_scan(self):
+        self.assertTrue(False) # Test not yet implemented
+
+    def test_generate_sector(self):
+        self.assertTrue(False) # Test not yet implemented
+
+    def test_short_range_scan(self):
+        self.assertTrue(False) # Test not yet implemented
+
+    def test_print_sector(self):
+        self.assertTrue(False) # Test not yet implemented
+
+    def test_print_sector_row(self):
+        self.assertTrue(False) # Test not yet implemented
+
+    def test_print_mission(self):
+        self.assertTrue(False) # Test not yet implemented
+
+    def test_print_strings(self):
+        self.assertTrue(False) # Test not yet implemented
 
 if __name__ == '__main__':
     unittest.main()

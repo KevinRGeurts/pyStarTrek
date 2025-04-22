@@ -874,6 +874,8 @@ def initialize_game():
     game.phaser_damage = 0
     game.shield_level = 0
     game.docked = False
+    game.starbase_x = 0
+    game.starbase_y = 0
 
     names = []
     for name in strings.quadrantNames:
@@ -910,6 +912,7 @@ def print_strings(string_list):
 
 if __name__ == '__main__':
     # TODO: Remove random number seeding after done testing, and before "shipping"
+    # TODO: OR, set up with /d command line argument to use seed.
     sv=1234567890
     random.seed(sv)
     run()
