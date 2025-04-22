@@ -53,7 +53,10 @@ class Game():
         self.destroyed = False
         self.starbase_x, self.starbase_y = 0, 0
         self.quadrants = [[Quadrant() for _ in range(8)] for _ in range(8)]
-        self.sector = [[SectorType() for _ in range(8)] for _ in range(8)]
+        # TODO: Think self.sector should be a list of lists of int not SectorType
+        # self.sector = [[SectorType() for _ in range(8)] for _ in range(8)]
+        # NOTE: self.sector[row=y=0..7][column=x=0..7]
+        self.sector = [[int() for _ in range(8)] for _ in range(8)]
         self.klingon_ships = []
 
 game = Game()
@@ -609,16 +612,19 @@ def navigation():
     # quad_x = quad_y = sect_x = sect_y = 0
     last_sect_x = game.sector_x
     last_sect_y = game.sector_y
+    # Empty out the current game sector, from which navigation begins. This sector should always have contained
+    # the Enterprese
+    assert(game.sector[game.sector_y][game.sector_x] == sector_type.enterprise)
     game.sector[game.sector_y][game.sector_x] = sector_type.empty
     obstacle = False
     for i in range(999):
         x += vx
         y += vy
-        quad_x = int(round(x)) / 8
-        quad_y = int(round(y)) / 8
+        quad_x = int(x//8)
+        quad_y = int(y//8)
         if quad_x == game.quadrant_x and quad_y == game.quadrant_y:
-            sect_x = int(round(x)) % 8
-            sect_y = int(round(y)) % 8
+            sect_x = int(x%8)
+            sect_y = int(y%8)
             if game.sector[sect_y][sect_x] != sector_type.empty:
                 game.sector_x = last_sect_x
                 game.sector_y = last_sect_y
@@ -639,10 +645,10 @@ def navigation():
             y = 0
         elif y > 63:
             y = 63
-        quad_x = int(round(x) / 8)
-        quad_y = int(round(y) / 8)
-        game.sector_x = int(round(x)) % 8
-        game.sector_y = int(round(y)) % 8
+        quad_x = int(x//8)
+        quad_y = int(y//8)
+        game.sector_x = int(x%8)
+        game.sector_y = int(y%8)
         if quad_x != game.quadrant_x or quad_y != game.quadrant_y:
             game.quadrant_x = quad_x
             game.quadrant_y = quad_y
@@ -693,6 +699,7 @@ def input_double(prompt):
     except: # Most likely a ValueError
         return False
 
+
 # TODO: I added this, but it may not be needed, in which case it should be taken back out.
 def input_int(prompt):
     text = input(prompt)
@@ -737,14 +744,28 @@ def generate_sector():
 
 
 def is_docking_location(i, j):
-    for y in range(i - 1, i+1):  # i + 1?
-        for x in range(j - 1, j+1):  # j + 1?
+    """
+    :parameter i: Row in sector, or y-index in sector, 0-indexed, so valid range is 0..7
+    :parameter j: Column in sector, or x-index in sector, 0-indexed, so valid range is 0..7
+    """
+    # NOTE: The two nested for loops will search a nine-sector box centered on (i,j), so that
+    # the Enterprise will dock if it arrives in a sector that is adjacent to the starbase.
+    for y in range(i - 1, i+2):  # i + 1?
+        for x in range(j - 1, j+2):  # j + 1?
             if read_sector(y, x) == sector_type.starbase:
                 return True
     return False
 
 
 def is_sector_region_empty(i, j):
+    """
+    :parameter i: Row in sector, or y-index in sector, 0-indexed, so valid range is 0..7
+    :parameter j: Column in sector, or x-index in sector, 0-indexed, so valid range is 0..7
+    """
+    # Imagine a 3X3 block of sectors centered around sector(row=i,col=j). This function checks that
+    # sector (i,j) is empty, either the sector to the left or right is empty, and either the sector
+    # to the upper-right or upper-left is emtpy. Notably, it does not check sectors to the lower-left or lower-right.
+    # Assuming this is the desired behavior, then it prevents too much close packing when a sector is generated. 
     for y in range(i - 1, i+1):  # i + 1?
         if read_sector(y, j - 1) != sector_type.empty and read_sector(y, j + 1) != sector_type.empty:
             return False
@@ -752,6 +773,10 @@ def is_sector_region_empty(i, j):
 
 
 def read_sector(i, j):
+    """
+    :parameter i: Row in sector, or y-index in sector, 0-indexed, so valid range is 0..7
+    :parameter j: Column in sector, or x-index in sector, 0-indexed, so valid range is 0..7
+    """
     global game
     if i < 0 or j < 0 or i > 7 or j > 7:
         return sector_type.empty
@@ -884,6 +909,7 @@ def print_strings(string_list):
 
 
 if __name__ == '__main__':
+    # TODO: Remove random number seeding after done testing, and before "shipping"
     sv=1234567890
     random.seed(sv)
     run()

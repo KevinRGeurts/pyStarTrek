@@ -6,9 +6,10 @@ from io import StringIO
 from unittest.mock import patch
 
 # local imports
-from startrek import Quadrant, SectorType, KlingonShip, Game, game, induce_damage, initialize_game, repair_damage
+from startrek import Quadrant, SectorType, KlingonShip, Game, game, induce_damage, initialize_game, is_sector_region_empty, klingons_attack, repair_damage
 from startrek import distance, compute_direction, print_game_status, command_prompt, navigation_calculator
-from startrek import input_double, input_int, phaser_controls, sector_type, generate_sector
+from startrek import input_double, input_int, phaser_controls, sector_type, generate_sector, read_sector
+from startrek import short_range_scan, is_docking_location, is_sector_region_empty
 
 class Test_test_startrek(unittest.TestCase):
 
@@ -527,6 +528,17 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
+    def test_klingons_attack_no_klingons_in_sector(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        generate_sector()
+        self.assertFalse(klingons_attack())
+
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in issuing a 'nav' command to move to a quadrant with a starbase.
     # Then a 'com' command, then a 'bas' command to the computer, when the current quadrant includes a starbase
@@ -599,6 +611,7 @@ class Test_test_startrek(unittest.TestCase):
         # Start the game and navigate to quadrant with klingon
         gm=game
         initialize_game()
+        generate_sector()
         command_prompt()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -612,7 +625,7 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='bas = Starbase Calculator\n'
         exp_val+='nav = Navigation Calculator\n'
         exp_val+='Enter computer command: '
-        exp_val+='Direction 3.48: Klingon ship in sector [4,3].'
+        exp_val+='Direction 3.18: Klingon ship in sector [5,1].'
         command_prompt()
         # Get the captured output
         act_val = captured_output.getvalue().strip()
@@ -751,6 +764,7 @@ class Test_test_startrek(unittest.TestCase):
         # Start the game and navigate to quadrant with klingon
         gm=game
         initialize_game()
+        generate_sector()
         command_prompt()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -758,7 +772,7 @@ class Test_test_startrek(unittest.TestCase):
         # Fire phasers
         exp_val='Enter command: '
         exp_val+='Phasers locked on target.\n'
-        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Enter phaser energy (1--2992): '
         exp_val+='Invalid energy level.'
         command_prompt()
         # Get the captured output
@@ -777,6 +791,7 @@ class Test_test_startrek(unittest.TestCase):
         # Start the game and navigate to quadrant with klingon
         gm=game
         initialize_game()
+        generate_sector()
         command_prompt()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -784,7 +799,7 @@ class Test_test_startrek(unittest.TestCase):
         # Fire phasers
         exp_val='Enter command: '
         exp_val+='Phasers locked on target.\n'
-        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Enter phaser energy (1--2992): '
         exp_val+='Invalid energy level.'
         command_prompt()
         # Get the captured output
@@ -803,6 +818,7 @@ class Test_test_startrek(unittest.TestCase):
         # Start the game and navigate to quadrant with klingon
         gm=game
         initialize_game()
+        generate_sector()
         command_prompt()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -810,7 +826,7 @@ class Test_test_startrek(unittest.TestCase):
         # Fire phasers
         exp_val='Enter command: '
         exp_val+='Phasers locked on target.\n'
-        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Enter phaser energy (1--2992): '
         exp_val+='Invalid energy level.'
         command_prompt()
         # Get the captured output
@@ -829,6 +845,7 @@ class Test_test_startrek(unittest.TestCase):
         # Start the game and navigate to quadrant with klingon
         gm=game
         initialize_game()
+        generate_sector()
         command_prompt()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -836,9 +853,9 @@ class Test_test_startrek(unittest.TestCase):
         # Fire phasers
         exp_val='Enter command: '
         exp_val+='Phasers locked on target.\n'
-        exp_val+='Enter phaser energy (1--3000): '
+        exp_val+='Enter phaser energy (1--2992): '
         exp_val+='Firing phasers...\n'
-        exp_val+='Klingon ship destroyed at sector [4,3].'
+        exp_val+='Klingon ship destroyed at sector [5,1].'
         command_prompt()
         # Get the captured output
         act_val = captured_output.getvalue().strip()
@@ -1077,6 +1094,92 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
+    def test_klingons_attack_no_klingons_in_sector(self):
+        random.seed(1234567890)
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Run the test
+        gm=game
+        initialize_game()
+        generate_sector()
+        self.assertFalse(klingons_attack())
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in:
+    #   (1) Navigating to quadrant with klingon and starbase: nav / 6 / 1
+    #   (2) Raising shields so enterprise isn't destroyed before docking: she / add / 1000
+    #   (3) Navigating to dock with the starbase
+    @patch('sys.stdin', StringIO('nav\n6\n1\nshe\nadd\n500\nnav\n1\n.2\n'))
+    def test_klingons_attack_docked(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with starbase
+        gm=game
+        initialize_game()
+        generate_sector()
+        # This command_prompt() will eat the nav/6/1 sequence
+        command_prompt()
+        # This command_prompt() will eat the she/add/500 sequence
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Navigate to dock with starbase
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Warp engines engaged.\n'
+
+        exp_val+='-=--=--=--=--=--=--=--=-          Region: Wolf 359\n'
+        exp_val+='            +K+                    Quadrant: [2,8]\n'
+        exp_val+='                                     Sector: [7,8]\n'
+        exp_val+='       *                           Stardate: 2267\n'
+        exp_val+='                             Time remaining: 40\n'
+        exp_val+='                                  Condition: RED\n'
+        exp_val+=' *                                   Energy: 3000\n'
+        exp_val+='                     >S<            Shields: 0\n'
+        exp_val+='                  <E>      Photon Torpedoes: 10\n'
+        exp_val+='-=--=--=--=--=--=--=--=-             Docked: True\n'
+        exp_val+='Condition RED: Klingon ship detected.\n'
+        exp_val+='Lowering shields as part of docking sequence...\n'
+        exp_val+='Enterprise successfully docked with starbase.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    def test_is_docking_location(self):
+        random.seed(1234567890)
+        # Start the game and navigate to quadrant with starbase
+        gm=game
+        initialize_game()
+        generate_sector()
+
+        # This command_prompt() will eat the she/add/500 sequence
+        command_prompt()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Adjust shields
+        exp_val='Enter command: '
+        exp_val+='--- Shield Controls ----------------\n'
+        exp_val+='add = Add energy to shields.\n'
+        exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='Enter shield control command: '
+        exp_val+='Enter amount of energy (1--500): '
+        exp_val+='Invalid amount of energy.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+        self.assertTrue(False) # Too make sure this fails, until I resolve the apparent inability to dock
+
     # TODO: Also check that repair messages are printed
     def test_repair_damage(self):
         gm=game
@@ -1301,6 +1404,40 @@ class Test_test_startrek(unittest.TestCase):
         act_val=input_double('Enter a valid floating point number:')
         self.assertFalse(act_val)
 
+    def test_read_sector(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        short_range_scan() # Should not really be needed, but helpful for debugging test
+        # for j in range(8):
+        #     for i in range(8):
+        #         print(f"for (x,y)=({i},{j}), sector type = {read_sector(j,i)}")
+        # Note: read_sector(yi,xi), both 0-indexed
+        self.assertEqual(sector_type.star, read_sector(0,2))
+        self.assertEqual(sector_type.enterprise, read_sector(4,3))
+
+    def test_is_docking_location(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        # Place a starbase at [row=4, 0-indexed][row=5, 0-indexed]=[x=6,y=5]
+        gm.sector[4][5]=sector_type.starbase
+        self.assertTrue(is_docking_location(3,4))
+        self.assertTrue(is_docking_location(3,5))
+        self.assertTrue(is_docking_location(3,6))
+        self.assertTrue(is_docking_location(4,4))
+        self.assertTrue(is_docking_location(4,5))
+        self.assertTrue(is_docking_location(4,6))
+        self.assertTrue(is_docking_location(5,4))
+        self.assertTrue(is_docking_location(5,5))
+        self.assertTrue(is_docking_location(5,6))
+        self.assertFalse(is_docking_location(2,5))
+        self.assertFalse(is_docking_location(6,5))
+        self.assertFalse(is_docking_location(4,3))
+        self.assertFalse(is_docking_location(4,7))
+
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in valid input of an integer
     @patch('sys.stdin', StringIO('7\n'))
@@ -1315,6 +1452,185 @@ class Test_test_startrek(unittest.TestCase):
     def test_input_int(self):
         act_val=input_int('Enter a valid integer number:')
         self.assertFalse(act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command, then a direction (1), then a speed (6) too large for the
+    # damaged navigation, i.e., the engines.
+    @patch('sys.stdin', StringIO('nav\n1\n6\n'))
+    def test_navigation_damaged(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        gm.navigation_damage=1
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Attempt navigation with damage
+        exp_val='Enter command: '
+        exp_val+='Warp engines damaged. Maximum warp factor: 0.8\n'
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter warp factor (0.1--0.8): '
+        exp_val+='Invalid warp factor.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command, then an invalid direction (0.5).
+    @patch('sys.stdin', StringIO('nav\n0.5\n'))
+    def test_navigation_invalid_course_low(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Attempt navigation with damage
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Invalid course.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command, then an invalid direction (9.1).
+    @patch('sys.stdin', StringIO('nav\n9.1\n'))
+    def test_navigation_invalid_course_high(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Attempt navigation with damage
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Invalid course.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command, then an invalid direction ('foo').
+    @patch('sys.stdin', StringIO('nav\nfoo\n'))
+    def test_navigation_invalid_course_invalid(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Attempt navigation with damage
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Invalid course.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command, then a valid direction (1), but a too low
+    # warp factor (0.05).
+    @patch('sys.stdin', StringIO('nav\n1\n0.05\n'))
+    def test_navigation_warp_factor_low(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Attempt navigation with damage
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Invalid warp factor.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'nav' command, then a valid direction (1), but an invalid
+    # warp factor ('foo').
+    @patch('sys.stdin', StringIO('nav\n1\nfoo\n'))
+    def test_navigation_warp_factor_invalid(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Attempt navigation with damage
+        exp_val='Enter command: '
+        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Invalid warp factor.'
+        command_prompt()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val) 
+        
+    def test_is_sector_region_empty(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        short_range_scan()
+        # For debugging:
+        # for j in range(0,8):
+        #     for i in range(0,8):
+        #         print(f"({j},{i})={is_sector_region_empty(j,i)}")
+        # Check all the NOT empty regions.
+        # This is the sector being tested against. X,Y,X are the three sectors
+        # that do not contain a star or the Enterprise, which also return False.
+        # A is a sector that will return True, even though lower-left AND lower-right are not empty.
+        #
+        # -=--=--=--=--=--=--=--=-          Region: Pegos Minor
+        #        *                           Quadrant: [3,8]
+        #                                      Sector: [4,5]
+        #           *                        Stardate: 2266
+        #                              Time remaining: 41
+        #          <E>       A              Condition: GREEN
+        #                 *  X  *              Energy: 3000
+        #     *        *  Y  *                Shields: 0
+        #                 Z          Photon Torpedoes: 10
+        # -=--=--=--=--=--=--=--=-             Docked: False
+        self.assertFalse(is_sector_region_empty(0,2))
+        self.assertFalse(is_sector_region_empty(2,3))
+        self.assertFalse(is_sector_region_empty(4,3))
+        self.assertFalse(is_sector_region_empty(5,5))
+        self.assertFalse(is_sector_region_empty(5,6))
+        self.assertFalse(is_sector_region_empty(5,7))
+        self.assertFalse(is_sector_region_empty(6,1))
+        self.assertFalse(is_sector_region_empty(6,4))
+        self.assertFalse(is_sector_region_empty(6,5))
+        self.assertFalse(is_sector_region_empty(6,6))
+        self.assertFalse(is_sector_region_empty(7,5))
+        # Now check some empty regions.
+        self.assertTrue(is_sector_region_empty(4,6))  
 
 
 if __name__ == '__main__':
