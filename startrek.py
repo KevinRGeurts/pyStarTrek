@@ -1,7 +1,7 @@
 ﻿from math import atan2, pi, sqrt, cos, sin
 import random
-
 import strings
+import sys
 
 
 class Quadrant():
@@ -53,9 +53,6 @@ class Game():
         self.destroyed = False
         self.starbase_x, self.starbase_y = 0, 0
         self.quadrants = [[Quadrant() for _ in range(8)] for _ in range(8)]
-        # TODO: Think self.sector should be a list of lists of int not SectorType
-        # self.sector = [[SectorType() for _ in range(8)] for _ in range(8)]
-        # NOTE: self.sector[row=y=0..7][column=x=0..7]
         self.sector = [[int() for _ in range(8)] for _ in range(8)]
         self.klingon_ships = []
 
@@ -700,16 +697,6 @@ def input_double(prompt):
         return False
 
 
-# TODO: I added this, but it may not be needed, in which case it should be taken back out.
-def input_int(prompt):
-    text = input(prompt)
-    try:
-        value = int(text)
-        return value
-    except: # Most likely a ValueError
-        return False
-
-
 def generate_sector():
     global game
     quadrant = game.quadrants[game.quadrant_y][game.quadrant_x]
@@ -911,8 +898,11 @@ def print_strings(string_list):
 
 
 if __name__ == '__main__':
-    # TODO: Remove random number seeding after done testing, and before "shipping"
-    # TODO: OR, set up with /d command line argument to use seed.
-    sv=1234567890
-    random.seed(sv)
+    if len(sys.argv)>1 and sys.argv[1]=='/d':
+        # '/d' = Debug mode
+        # Seed the random number generator.
+        # Intended to sync game play with a unittest case.
+        sv=1234567890
+        random.seed(sv)
+        print('Running in DEBUG mode...')
     run()

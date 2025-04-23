@@ -1,5 +1,4 @@
 # standard imports
-from encodings.punycode import generate_generalized_integer
 import unittest
 import random
 import sys
@@ -9,8 +8,13 @@ from unittest.mock import patch
 # local imports
 from startrek import Quadrant, SectorType, KlingonShip, Game, game, induce_damage, initialize_game, is_sector_region_empty, klingons_attack, repair_damage
 from startrek import distance, compute_direction, print_game_status, command_prompt, navigation_calculator
-from startrek import input_double, input_int, phaser_controls, sector_type, generate_sector, read_sector
-from startrek import short_range_scan, is_docking_location, is_sector_region_empty
+from startrek import input_double, phaser_controls, sector_type, generate_sector, read_sector
+from startrek import short_range_scan, is_docking_location, is_sector_region_empty, print_strings, print_mission
+from startrek import print_sector_row, print_sector, long_range_scan, run
+from strings import computerStrings
+
+# TODO: Consider factoring out some common setup, like initize_game(), generate_sector(), and separate the tests that
+# use that setup into a different unittest.TestCase child.
 
 class Test_test_startrek(unittest.TestCase):
 
@@ -1556,21 +1560,6 @@ class Test_test_startrek(unittest.TestCase):
         self.assertFalse(is_docking_location(4,7))
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
-    # The patch should result in valid input of an integer
-    @patch('sys.stdin', StringIO('7\n'))
-    def test_input_int(self):
-        exp_val=7
-        act_val=input_int('Enter a valid integer number:')
-        self.assertEqual(exp_val, act_val)
-
-    # Apply a patch() decorator to replace keyboard input from user with a string.
-    # The patch should result in an invalid input
-    @patch('sys.stdin', StringIO('7.5\n'))
-    def test_input_int(self):
-        act_val=input_int('Enter a valid integer number:')
-        self.assertFalse(act_val)
-
-    # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in issuing a 'nav' command, then a direction (1), then a speed (6) too large for the
     # damaged navigation, i.e., the engines.
     @patch('sys.stdin', StringIO('nav\n1\n6\n'))
@@ -1846,33 +1835,188 @@ class Test_test_startrek(unittest.TestCase):
         self.assertFalse(is_sector_region_empty(7,5))
         # Now check some empty regions.
         self.assertTrue(is_sector_region_empty(4,6))  
-
+    
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in issuing a 'qui command, which will immediately exit game.
+    @patch('sys.stdin', StringIO('qui\n'))
     def test_run(self):
-        self.assertTrue(False) # Test not yet implemented
+        random.seed(1234567890)
+        # Run the game. Shoud raise a SystemExit exception
+        # NOTE: This is quite a crude test of runI()
+        self.assertRaises(SystemExit, run)
 
     def test_long_range_scan_damaged(self):
-        self.assertTrue(False) # Test not yet implemented
+        self.maxDiff=None
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        # Artificially damager the long range scanners
+        gm.long_range_scan_damage=1
+        exp_val='Long range scanner is damaged. Repairs are underway.'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Print the string
+        long_range_scan()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
     def test_long_range_scan(self):
-        self.assertTrue(False) # Test not yet implemented
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        exp_val='-------------------\n'
+        exp_val+='| 113 | 008 | 006 |\n'
+        exp_val+='-------------------\n'
+        exp_val+='| 112 | 007 | 008 |\n'
+        exp_val+='-------------------\n'
+        exp_val+='| 000 | 000 | 000 |\n'
+        exp_val+='-------------------'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Print the string
+        long_range_scan()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
     def test_generate_sector(self):
-        self.assertTrue(False) # Test not yet implemented
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        exp_val=[[1, 1, 2, 1, 1, 1, 1, 1],
+                    [1, 1, 1, 1, 1, 1, 1, 1],
+                    [1, 1, 1, 2, 1, 1, 1, 1],
+                    [1, 1, 1, 1, 1, 1, 1, 1],
+                    [1, 1, 1, 4, 1, 1, 1, 1],
+                    [1, 1, 1, 1, 1, 2, 1, 2],
+                    [1, 2, 1, 1, 2, 1, 2, 1],
+                    [1, 1, 1, 1, 1, 1, 1, 1]]
+        act_val=game.sector
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
     def test_short_range_scan(self):
-        self.assertTrue(False) # Test not yet implemented
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        exp_val='-=--=--=--=--=--=--=--=-          Region: Pegos Minor\n'
+        exp_val+='       *                           Quadrant: [3,8]\n'
+        exp_val+='                                     Sector: [4,5]\n'
+        exp_val+='          *                        Stardate: 2266\n'
+        exp_val+='                             Time remaining: 41\n'
+        exp_val+='         <E>                      Condition: GREEN\n'
+        exp_val+='                *     *              Energy: 3000\n'
+        exp_val+='    *        *     *                Shields: 0\n'
+        exp_val+='                           Photon Torpedoes: 10\n'
+        exp_val+='-=--=--=--=--=--=--=--=-             Docked: False'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Print the string
+        short_range_scan()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
     def test_print_sector(self):
-        self.assertTrue(False) # Test not yet implemented
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        exp_val='-=--=--=--=--=--=--=--=-          Region: Pegos Minor\n'
+        exp_val+='       *                           Quadrant: [3,8]\n'
+        exp_val+='                                     Sector: [4,5]\n'
+        exp_val+='          *                        Stardate: 2266\n'
+        exp_val+='                             Time remaining: 41\n'
+        exp_val+='         <E>                      Condition: GREEN\n'
+        exp_val+='                *     *              Energy: 3000\n'
+        exp_val+='    *        *     *                Shields: 0\n'
+        exp_val+='                           Photon Torpedoes: 10\n'
+        exp_val+='-=--=--=--=--=--=--=--=-             Docked: False'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Print the string
+        print_sector(gm.quadrants[gm.quadrant_y][gm.quadrant_x])
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
     def test_print_sector_row(self):
-        self.assertTrue(False) # Test not yet implemented
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        sb='foo'
+        suffix='bar'
+        exp_val='foo                *     * bar'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Print the string
+        print_sector_row(sb,5,suffix)
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
     def test_print_mission(self):
-        self.assertTrue(False) # Test not yet implemented
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        exp_val='Mission: Destroy 18 Klingon ships in 41 stardates with 2 starbases.'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Print the string
+        print_mission()
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
 
     def test_print_strings(self):
-        self.assertTrue(False) # Test not yet implemented
+        exp_val='--- Main Computer --------------\n'
+        exp_val+='rec = Cumulative Galatic Record\n'
+        exp_val+='sta = Status Report\n'
+        exp_val+='tor = Photon Torpedo Calculator\n'
+        exp_val+='bas = Starbase Calculator\n'
+        exp_val+='nav = Navigation Calculator'
+        # Redirect standard output to a buffer
+        captured_output = StringIO()
+        sys.stdout = captured_output
+        # Print the string
+        print_strings(computerStrings)
+        # Get the captured output
+        act_val = captured_output.getvalue().strip()
+        # Reset the standard output
+        sys.stdout = sys.__stdout__
+        # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
 
 if __name__ == '__main__':
     unittest.main()
