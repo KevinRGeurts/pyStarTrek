@@ -571,7 +571,7 @@ def navigation():
         print("Warp engines damaged. Maximum warp factor: {0}".format(max_warp_factor))
         print
 
-    direction = input_double("Enter course (1.0--8.9): ")
+    direction = input_double("Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): ")
     if not direction or direction < 1.0 or direction > 9.0:
         print("Invalid course.")
         print

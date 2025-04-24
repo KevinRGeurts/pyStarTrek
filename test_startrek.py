@@ -1133,7 +1133,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Navigate within sector
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Enter warp factor (0.1--8.0): '
         exp_val+='Warp engines engaged.\n'
         exp_val+='-=--=--=--=--=--=--=--=-          Region: Wolf 359\n'
@@ -1238,7 +1238,7 @@ class Test_test_startrek(unittest.TestCase):
         # Navigate to dock with starbase
         exp_val='Enter command: '
         exp_val+='Warp engines damaged. Maximum warp factor: 0.8999999999999999\n'
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Enter warp factor (0.1--0.8999999999999999): '
         exp_val+='Warp engines engaged.\n'
         exp_val+='-=--=--=--=--=--=--=--=-          Region: Wolf 359\n'
@@ -1574,7 +1574,7 @@ class Test_test_startrek(unittest.TestCase):
         # Attempt navigation with damage
         exp_val='Enter command: '
         exp_val+='Warp engines damaged. Maximum warp factor: 0.8\n'
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Enter warp factor (0.1--0.8): '
         exp_val+='Invalid warp factor.'
         command_prompt()
@@ -1597,7 +1597,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Attempt navigation with damage
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Invalid course.'
         command_prompt()
         # Get the captured output
@@ -1619,7 +1619,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Attempt navigation with damage
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Invalid course.'
         command_prompt()
         # Get the captured output
@@ -1641,7 +1641,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Attempt navigation with damage
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Invalid course.'
         command_prompt()
         # Get the captured output
@@ -1664,7 +1664,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Attempt navigation with damage
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Enter warp factor (0.1--8.0): '
         exp_val+='Invalid warp factor.'
         command_prompt()
@@ -1688,7 +1688,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Attempt navigation with damage
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Enter warp factor (0.1--8.0): '
         exp_val+='Invalid warp factor.'
         command_prompt()
@@ -1714,7 +1714,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Attempt navigation with damage
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Enter warp factor (0.1--8.0): '
         exp_val+='Unable to comply. Insufficient energy to travel that speed.'
         command_prompt()
@@ -1739,7 +1739,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Attempt navigation with damage
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Enter warp factor (0.1--8.0): '
         exp_val+='Warp engines engaged.\n'
         exp_val+='-=--=--=--=--=--=--=--=-          Region: Tau Alpha C\n'
@@ -1774,7 +1774,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Attempt navigation with damage
         exp_val='Enter command: '
-        exp_val+='Enter course (1.0--8.9): '
+        exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Enter warp factor (0.1--8.0): '
         exp_val+='Warp engines engaged.\n'
         exp_val+='Encountered obstacle within quadrant.\n'
