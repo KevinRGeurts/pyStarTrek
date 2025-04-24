@@ -41,7 +41,8 @@ April 2025 (Kevin R. Geurts, kevin.r.geurts@gmail.com)
 	TODO comments denote potential coverage improvements.
 (11) In startrek.py, added hint to request for navigation course to indicated up, down, left, right meaning of course number.
 (12) In startrek.py, added hint to request for photon torpedo firing direction to indicate up, down, left, right meaning of numeric direction.
-
+(13) In startrek.py, fixed bug in initialize_game() that caused there to be a far more starbases present in the galaxy than intended.
+	 Updated unittest in test_startrek.py to assert that this is not happening.
 
 Improvements
 ============
