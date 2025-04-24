@@ -1181,7 +1181,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Navigate to dock with starbase
         exp_val='Enter command: '
-        exp_val+='Enter firing direction (1.0--9.0): '
+        exp_val+='Enter firing direction (1.0--9.0, 1=right,3=up,5=left,7=down): '
         exp_val+='Photon torpedo fired...\n'
         exp_val+='  [8,6]\n'
         exp_val+='  [8,5]\n'

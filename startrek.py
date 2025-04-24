@@ -503,7 +503,7 @@ def torpedo_control():
         print("There are no Klingon ships in this quadrant.")
         print
         return
-    direction = input_double("Enter firing direction (1.0--9.0): ")
+    direction = input_double("Enter firing direction (1.0--9.0, 1=right,3=up,5=left,7=down): ")
     if not direction or direction < 1.0 or direction > 9.0:
         print("Invalid direction.")
         print
