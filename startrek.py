@@ -879,11 +879,14 @@ def initialize_game():
 
     klingon_count = game.klingons
     starbase_count = game.starbases
+    # Randomly place up to 3 klingon ships in quadrants until all klingon ships are placed.
+    # Randomly place up to 1 starbase in quadrants until all starbases are placed.
+    # Note that the intent is for all starbases to be placed in quadrants that also have at least 1 klingon.
     while klingon_count > 0 or starbase_count > 0:
         i = random.randint(0, 7)
         j = random.randint(0, 7)
         quadrant = game.quadrants[i][j]
-        if not quadrant.starbase:
+        if not quadrant.starbase and starbase_count > 0:
             quadrant.starbase = True
             starbase_count -= 1
         if quadrant.klingons < 3:

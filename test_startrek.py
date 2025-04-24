@@ -100,6 +100,24 @@ class Test_test_startrek(unittest.TestCase):
                  len(gm.klingon_ships),
                 )
         self.assertEqual(exp_val, act_val)
+        # Test that total number of Klingons in list gm.quadrants equals gm.klingons
+        act_val=0
+        for j in range(0,8):
+            for i in range(0,8):
+                    act_val+=gm.quadrants[j][i].klingons
+        exp_val = gm.klingons
+        self.assertEqual(exp_val, act_val)        # Test that total number of Quadrants in list gm.quadrants with starbase=True == gm.starbases
+        # Don't understand why this list comprehension doesn't work
+        # act_val = len([[q for q in lofq if q.starbase==True] for lofq in gm.quadrants])
+        # But do this instead:
+        act_val=0
+        for j in range(0,8):
+            for i in range(0,8):
+                if gm.quadrants[j][i].starbase==True:
+                    #print(f"Starbase in quadrant: col={j}, row={i}")
+                    act_val+=1
+        exp_val = gm.starbases
+        self.assertEqual(exp_val, act_val)
 
     def test_print_game_status_destroyed(self):
         # Redirect standard output to a buffer
@@ -682,6 +700,7 @@ class Test_test_startrek(unittest.TestCase):
     # Then a 'com' command, then a 'rec' command to the computer.
     @patch('sys.stdin', StringIO('lrs\ncom\nrec\n'))
     def test_display_galactic_record(self):
+        self.maxDiff=None
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
         gm=game
@@ -710,7 +729,7 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='-------------------------------------------------\n'
         exp_val+='| 000 | 000 | 000 | 000 | 000 | 000 | 000 | 000 |\n'
         exp_val+='-------------------------------------------------\n'
-        exp_val+='| 000 | 113 | 008 | 006 | 000 | 000 | 000 | 000 |\n'
+        exp_val+='| 000 | 103 | 008 | 006 | 000 | 000 | 000 | 000 |\n'
         exp_val+='-------------------------------------------------\n'
         exp_val+='| 000 | 112 | 007 | 008 | 000 | 000 | 000 | 000 |\n'
         exp_val+='-------------------------------------------------'
@@ -1872,7 +1891,7 @@ class Test_test_startrek(unittest.TestCase):
         initialize_game()
         generate_sector()
         exp_val='-------------------\n'
-        exp_val+='| 113 | 008 | 006 |\n'
+        exp_val+='| 103 | 008 | 006 |\n'
         exp_val+='-------------------\n'
         exp_val+='| 112 | 007 | 008 |\n'
         exp_val+='-------------------\n'
