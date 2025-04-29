@@ -791,16 +791,17 @@ def print_sector(quadrant):
         game.condition = "YELLOW"
 
     sb = ""
-    print("-=--=--=--=--=--=--=--=-          Region: {0}".format(quadrant.name))
-    print_sector_row(sb, 0, "           Quadrant: [{0},{1}]".format(game.quadrant_x + 1, game.quadrant_y + 1))
-    print_sector_row(sb, 1, "             Sector: [{0},{1}]".format(game.sector_x + 1, game.sector_y + 1))
-    print_sector_row(sb, 2, "           Stardate: {0}".format(game.star_date))
-    print_sector_row(sb, 3, "     Time remaining: {0}".format(game.time_remaining))
-    print_sector_row(sb, 4, "          Condition: {0}".format(game.condition))
-    print_sector_row(sb, 5, "             Energy: {0}".format(game.energy))
-    print_sector_row(sb, 6, "            Shields: {0}".format(game.shield_level))
-    print_sector_row(sb, 7, "   Photon Torpedoes: {0}".format(game.photon_torpedoes))
-    print("-=--=--=--=--=--=--=--=-             Docked: {0}".format(game.docked))
+    print("X: 1  2  3  4  5  6  7  8")
+    print("Y:-=--=--=--=--=--=--=--=-          Region: {0}".format(quadrant.name))
+    print_sector_row('1 '+sb, 0, "           Quadrant: [{0},{1}]".format(game.quadrant_x + 1, game.quadrant_y + 1))
+    print_sector_row('2 '+sb, 1, "             Sector: [{0},{1}]".format(game.sector_x + 1, game.sector_y + 1))
+    print_sector_row('3 '+sb, 2, "           Stardate: {0}".format(game.star_date))
+    print_sector_row('4 '+sb, 3, "     Time remaining: {0}".format(game.time_remaining))
+    print_sector_row('5 '+sb, 4, "          Condition: {0}".format(game.condition))
+    print_sector_row('6 '+sb, 5, "             Energy: {0}".format(game.energy))
+    print_sector_row('7 '+sb, 6, "            Shields: {0}".format(game.shield_level))
+    print_sector_row('8 '+sb, 7, "   Photon Torpedoes: {0}".format(game.photon_torpedoes))
+    print("  -=--=--=--=--=--=--=--=-             Docked: {0}".format(game.docked))
 
     if quadrant.klingons > 0:
         print
