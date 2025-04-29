@@ -43,6 +43,7 @@ April 2025 (Kevin R. Geurts, kevin.r.geurts@gmail.com)
 (12) In startrek.py, added hint to request for photon torpedo firing direction to indicate up, down, left, right meaning of numeric direction.
 (13) In startrek.py, fixed bug in initialize_game() that caused there to be a far more starbases present in the galaxy than intended.
 	 Updated unittest in test_startrek.py to assert that this is not happening.
+(14) In startrek.py, added sector coordinate numbers to short range scan print.
 
 Improvements
 ============
@@ -54,10 +55,18 @@ Here is a list of possible improvements:
 
 - Encapsulate everything in classes
 - Include help/instructions
+- Add "cheat codes" as command line arguments: infinite energy, infinite torpedos, no damage, stronger phasers
 - Add extra features;
    + new ships, celestial objects, etc
    + new weapon types
    + crew functions
+   + quadrant coordinate numbers shown on long range scan and galactic record
+   + cloaked klingon ships that don't appear on long range scan or galactic record until they have been short range
+		scanned, because they they would have dropped cloak to potentially attack Enterprise
+   + wormhole with entry/exit in two different quadrants, that provides instant, no energy passage from one
+		quadrant to the other when Enterprise "docks" or "collides" with it. Could have a random risk of damaging
+		Enterprise.
+   + display torpedo track as "." on short range scan, instead of as a list of sector coordinates
 - Easier navigation (using cartesian system maybe)
 - Make some parts more 'Pythonic'
 - ...Plenty more!
