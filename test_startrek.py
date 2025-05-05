@@ -748,16 +748,11 @@ class Test_test_startrek(unittest.TestCase):
         gm=game
         initialize_game()
         gm.phaser_damage=1
-        exp_val='Phasers are damaged. Repairs are underway.'
-        # Redirect standard output to a buffer
-        captured_output = StringIO()
-        sys.stdout = captured_output
+        exp_val=[]
+        exp_val.append('Phasers are damaged. Repairs are underway.')
+        exp_val.append('')
         # Call for phasers
-        phaser_controls()
-        # Get the captured output
-        act_val = captured_output.getvalue().strip()
-        # Reset the standard output
-        sys.stdout = sys.__stdout__
+        act_val=phaser_controls()
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
@@ -766,16 +761,11 @@ class Test_test_startrek(unittest.TestCase):
         gm=game
         initialize_game()
         generate_sector()
-        exp_val='There are no Klingon ships in this quadrant.'
-        # Redirect standard output to a buffer
-        captured_output = StringIO()
-        sys.stdout = captured_output
+        exp_val=[]
+        exp_val.append('There are no Klingon ships in this quadrant.')
+        exp_val.append('')
         # Call for phasers
-        phaser_controls()
-        # Get the captured output
-        act_val = captured_output.getvalue().strip()
-        # Reset the standard output
-        sys.stdout = sys.__stdout__
+        act_val=phaser_controls()
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
@@ -877,7 +867,7 @@ class Test_test_startrek(unittest.TestCase):
         # Fire phasers
         exp_val='Enter command: '
         exp_val+='Phasers locked on target.\n'
-        exp_val+='Enter phaser energy (1--2992): '
+        exp_val+='Enter phaser energy (1--2992): \n'
         exp_val+='Firing phasers...\n'
         exp_val+='Klingon ship destroyed at sector [5,1].'
         command_prompt()
@@ -909,9 +899,9 @@ class Test_test_startrek(unittest.TestCase):
         # Fire phasers
         exp_val='Enter command: '
         exp_val+='Phasers locked on target.\n'
-        exp_val+='Enter phaser energy (1--2992): '
+        exp_val+='Enter phaser energy (1--2992): \n'
         exp_val+='Firing phasers...\n'
-        exp_val+='Hit ship at sector [5,1]. Klingon shield strength dropped to 306.\n'
+        exp_val+='Hit ship at sector [5,1]. Klingon shield strength dropped to 306.\n\n'
         exp_val+='Enterprise hit by ship at sector [5,1]. Shields dropped to 0.'
         command_prompt()
         # Get the captured output
@@ -1128,7 +1118,8 @@ class Test_test_startrek(unittest.TestCase):
         gm=game
         initialize_game()
         generate_sector()
-        self.assertFalse(klingons_attack())
+        (output,something)=klingons_attack()
+        self.assertFalse(something)
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in:
@@ -1166,7 +1157,9 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='7                      >S<            Shields: 500\n'
         exp_val+='8             <E>            Photon Torpedoes: 10\n'
         exp_val+='  -=--=--=--=--=--=--=--=-             Docked: False\n'
+        exp_val+='\n'
         exp_val+='Condition RED: Klingon ship detected.\n'
+        exp_val+='\n'
         exp_val+='Enterprise hit by ship at sector [5,1]. Shields dropped to 429.'
         command_prompt()
         # Get the captured output
@@ -1272,6 +1265,7 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='7                      >S<            Shields: 0\n'
         exp_val+='8                   <E>      Photon Torpedoes: 10\n'
         exp_val+='  -=--=--=--=--=--=--=--=-             Docked: True\n'
+        exp_val+='\n'
         exp_val+='Lowering shields as part of docking sequence...\n'
         exp_val+='Enterprise successfully docked with starbase.'
         command_prompt()
@@ -1876,16 +1870,8 @@ class Test_test_startrek(unittest.TestCase):
         generate_sector()
         # Artificially damager the long range scanners
         gm.long_range_scan_damage=1
-        exp_val='Long range scanner is damaged. Repairs are underway.'
-        # Redirect standard output to a buffer
-        captured_output = StringIO()
-        sys.stdout = captured_output
-        # Print the string
-        long_range_scan()
-        # Get the captured output
-        act_val = captured_output.getvalue().strip()
-        # Reset the standard output
-        sys.stdout = sys.__stdout__
+        exp_val=['Long range scanner is damaged. Repairs are underway.','']
+        act_val = long_range_scan()
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
@@ -1894,22 +1880,16 @@ class Test_test_startrek(unittest.TestCase):
         gm=game
         initialize_game()
         generate_sector()
-        exp_val='-------------------\n'
-        exp_val+='| 103 | 008 | 006 |\n'
-        exp_val+='-------------------\n'
-        exp_val+='| 112 | 007 | 008 |\n'
-        exp_val+='-------------------\n'
-        exp_val+='| 000 | 000 | 000 |\n'
-        exp_val+='-------------------'
-        # Redirect standard output to a buffer
-        captured_output = StringIO()
-        sys.stdout = captured_output
-        # Print the string
-        long_range_scan()
-        # Get the captured output
-        act_val = captured_output.getvalue().strip()
-        # Reset the standard output
-        sys.stdout = sys.__stdout__
+        exp_val=[]
+        exp_val.append('-------------------')
+        exp_val.append('| 103 | 008 | 006 |')
+        exp_val.append('-------------------')
+        exp_val.append('| 112 | 007 | 008 |')
+        exp_val.append('-------------------')
+        exp_val.append('| 000 | 000 | 000 |')
+        exp_val.append('-------------------')
+        exp_val.append('')
+        act_val=long_range_scan()
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
@@ -1935,26 +1915,20 @@ class Test_test_startrek(unittest.TestCase):
         gm=game
         initialize_game()
         generate_sector()
-        exp_val='X: 1  2  3  4  5  6  7  8\n'
-        exp_val+='Y:-=--=--=--=--=--=--=--=-          Region: Pegos Minor\n'
-        exp_val+='1        *                           Quadrant: [3,8]\n'
-        exp_val+='2                                      Sector: [4,5]\n'
-        exp_val+='3           *                        Stardate: 2266\n'
-        exp_val+='4                              Time remaining: 41\n'
-        exp_val+='5          <E>                      Condition: GREEN\n'
-        exp_val+='6                 *     *              Energy: 3000\n'
-        exp_val+='7     *        *     *                Shields: 0\n'
-        exp_val+='8                            Photon Torpedoes: 10\n'
-        exp_val+='  -=--=--=--=--=--=--=--=-             Docked: False'
-        # Redirect standard output to a buffer
-        captured_output = StringIO()
-        sys.stdout = captured_output
-        # Print the string
-        short_range_scan()
-        # Get the captured output
-        act_val = captured_output.getvalue().strip()
-        # Reset the standard output
-        sys.stdout = sys.__stdout__
+        exp_val=[]
+        exp_val.append('X: 1  2  3  4  5  6  7  8')
+        exp_val.append('Y:-=--=--=--=--=--=--=--=-          Region: Pegos Minor')
+        exp_val.append('1        *                           Quadrant: [3,8]')
+        exp_val.append('2                                      Sector: [4,5]')
+        exp_val.append('3           *                        Stardate: 2266')
+        exp_val.append('4                              Time remaining: 41')
+        exp_val.append('5          <E>                      Condition: GREEN')
+        exp_val.append('6                 *     *              Energy: 3000')
+        exp_val.append('7     *        *     *                Shields: 0')
+        exp_val.append('8                            Photon Torpedoes: 10')
+        exp_val.append('  -=--=--=--=--=--=--=--=-             Docked: False')
+        exp_val.append('')
+        act_val=short_range_scan()
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
@@ -1963,26 +1937,19 @@ class Test_test_startrek(unittest.TestCase):
         gm=game
         initialize_game()
         generate_sector()
-        exp_val='X: 1  2  3  4  5  6  7  8\n'
-        exp_val+='Y:-=--=--=--=--=--=--=--=-          Region: Pegos Minor\n'
-        exp_val+='1        *                           Quadrant: [3,8]\n'
-        exp_val+='2                                      Sector: [4,5]\n'
-        exp_val+='3           *                        Stardate: 2266\n'
-        exp_val+='4                              Time remaining: 41\n'
-        exp_val+='5          <E>                      Condition: GREEN\n'
-        exp_val+='6                 *     *              Energy: 3000\n'
-        exp_val+='7     *        *     *                Shields: 0\n'
-        exp_val+='8                            Photon Torpedoes: 10\n'
-        exp_val+='  -=--=--=--=--=--=--=--=-             Docked: False'
-        # Redirect standard output to a buffer
-        captured_output = StringIO()
-        sys.stdout = captured_output
-        # Print the string
-        print_sector(gm.quadrants[gm.quadrant_y][gm.quadrant_x])
-        # Get the captured output
-        act_val = captured_output.getvalue().strip()
-        # Reset the standard output
-        sys.stdout = sys.__stdout__
+        exp_val=[]
+        exp_val.append('X: 1  2  3  4  5  6  7  8')
+        exp_val.append('Y:-=--=--=--=--=--=--=--=-          Region: Pegos Minor')
+        exp_val.append('1        *                           Quadrant: [3,8]')
+        exp_val.append('2                                      Sector: [4,5]')
+        exp_val.append('3           *                        Stardate: 2266')
+        exp_val.append('4                              Time remaining: 41')
+        exp_val.append('5          <E>                      Condition: GREEN')
+        exp_val.append('6                 *     *              Energy: 3000')
+        exp_val.append('7     *        *     *                Shields: 0')
+        exp_val.append('8                            Photon Torpedoes: 10')
+        exp_val.append('  -=--=--=--=--=--=--=--=-             Docked: False')
+        act_val=print_sector(gm.quadrants[gm.quadrant_y][gm.quadrant_x])
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
@@ -1994,15 +1961,7 @@ class Test_test_startrek(unittest.TestCase):
         sb='foo'
         suffix='bar'
         exp_val='foo                *     * bar'
-        # Redirect standard output to a buffer
-        captured_output = StringIO()
-        sys.stdout = captured_output
-        # Print the string
-        print_sector_row(sb,5,suffix)
-        # Get the captured output
-        act_val = captured_output.getvalue().strip()
-        # Reset the standard output
-        sys.stdout = sys.__stdout__
+        act_val=print_sector_row(sb,5,suffix)
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
