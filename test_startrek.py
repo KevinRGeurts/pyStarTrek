@@ -1,4 +1,5 @@
 # standard imports
+from tkinter import COMMAND
 import unittest
 import random
 import sys
@@ -10,7 +11,8 @@ from startrek import Quadrant, SectorType, KlingonShip, Game, game, induce_damag
 from startrek import distance, compute_direction, print_game_status, command_prompt, navigation_calculator
 from startrek import input_double, phaser_controls, sector_type, generate_sector, read_sector
 from startrek import short_range_scan, is_docking_location, is_sector_region_empty, print_strings, print_mission
-from startrek import print_sector_row, print_sector, long_range_scan, run
+from startrek import print_sector_row, print_sector, long_range_scan, run, _torpedo_control_precheck, _torpedo_controls_input
+from startrek import _torpedo_control_launch
 from strings import computerStrings
 
 # TODO: Consider factoring out some common setup, like initize_game(), generate_sector(), and separate the tests that
@@ -1194,7 +1196,7 @@ class Test_test_startrek(unittest.TestCase):
         sys.stdout = captured_output
         # Navigate to dock with starbase
         exp_val='Enter command: '
-        exp_val+='Enter firing direction (1.0--9.0, 1=right,3=up,5=left,7=down): '
+        exp_val+='Enter firing direction (1.0--9.0, 1=right,3=up,5=left,7=down): \n'
         exp_val+='Photon torpedo fired...\n'
         exp_val+='  [8,6]\n'
         exp_val+='  [8,5]\n'
@@ -1999,6 +2001,178 @@ class Test_test_startrek(unittest.TestCase):
         # Reset the standard output
         sys.stdout = sys.__stdout__
         # Assert the output matches the expected value
+        self.assertEqual(exp_val, act_val)
+
+
+    def test_torpedo_precheck_damaged(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        # Artificially damage the torpedo control
+        gm.photon_damage=1
+        exp_val=[] # list of strings
+        exp_val.append('Photon torpedo control is damaged. Repairs are underway.')
+        exp_val.append('')
+        exp_val=(False,exp_val)
+        act_val = _torpedo_control_precheck()
+        # Assert the output matches the expected value
+        self.assertTupleEqual(exp_val, act_val)
+
+    def test_torpedo_precheck_no_torpedos_left(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        # Artificially use up all torpedoes
+        gm.photon_torpedoes=0
+        exp_val=[] # list of strings
+        exp_val.append('Photon torpedoes exhausted.')
+        exp_val.append('')
+        exp_val=(False,exp_val)
+        act_val = _torpedo_control_precheck()
+        # Assert the output matches the expected value
+        self.assertTupleEqual(exp_val, act_val)
+
+    def test_torpedo_precheck_no_klingons(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        # Note: There are no klingons in this sector, given teh random seed.
+        exp_val=[] # list of strings
+        exp_val.append('There are no Klingon ships in this quadrant.')
+        exp_val.append('')
+        exp_val=(False,exp_val)
+        act_val = _torpedo_control_precheck()
+        # Assert the output matches the expected value
+        self.assertTupleEqual(exp_val, act_val)
+
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result issuing 3 invalid torpedo directions ['foo', 9.1, 0.9]
+    @patch('sys.stdin', StringIO('foo\n9.1\n0.9\n'))
+    def test_torpedo_input_invalid(self):
+        # Test completely invalid input ('foo')
+        exp_val=(False, ['Invalid direction.', ''], False)
+        act_val = _torpedo_controls_input()
+        # Assert the output matches the expected value
+        self.assertTupleEqual(exp_val, act_val)
+        
+        # Test high invalid input ('9.1')
+        exp_val=(False, ['Invalid direction.', ''], 9.1)
+        act_val = _torpedo_controls_input()
+        # Assert the output matches the expected value
+        self.assertTupleEqual(exp_val, act_val)
+
+        # Test low invalid input ('0.9')
+        exp_val=(False, ['Invalid direction.', ''], 0.9)
+        act_val = _torpedo_controls_input()
+        # Assert the output matches the expected value
+        self.assertTupleEqual(exp_val, act_val)
+
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in raising shields and then navigating to a sector with a klingon.
+    @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n5\n1\n'))
+    def test_launch_torpedo_hit_star(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        command_prompt() # Raise shields
+        command_prompt() # Navigate
+        exp_val=[] # list of strings
+        exp_val.append('')
+        exp_val.append('Photon torpedo fired...')
+        exp_val.append('  [4,5]')
+        exp_val.append('  [4,4]')
+        exp_val.append('  [3,4]')
+        exp_val.append('  [3,3]')
+        exp_val.append("The torpedo was captured by a star's gravitational field at sector [3,3].")
+        exp_val.append("Enterprise hit by ship at sector [5,1]. Shields dropped to 320.")
+        exp_val.append('')
+        # Launch torpedo that will hit a star
+        act_val = _torpedo_control_launch(3.5)
+        self.assertEqual(exp_val, act_val)
+
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in raising shields and then navigating to a sector with a klingon and a starbase
+    @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n5\n1\n'))
+    def test_launch_torpedo_hit_starbase(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        command_prompt() # Raise shields
+        command_prompt() # Navigate
+        exp_val=[] # list of strings
+        exp_val.append('')
+        exp_val.append('Photon torpedo fired...')
+        exp_val.append('  [4,5]')
+        exp_val.append('  [5,5]')
+        exp_val.append('  [5,6]')
+        exp_val.append('  [6,6]')
+        exp_val.append('  [7,6]')
+        exp_val.append('  [8,6]')
+        exp_val.append('  [8,7]')
+        exp_val.append("The Enterprise destroyed a Federation starbase at sector [8,7]!")
+        exp_val.append("Enterprise hit by ship at sector [5,1]. Shields dropped to 320.")
+        exp_val.append('')
+        # Launch torpedo that will hit a starbase
+        act_val = _torpedo_control_launch(8.5)
+        self.assertEqual(exp_val, act_val)
+
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in raising shields and then navigating to a sector with a klingon and a starbase
+    @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n5\n1\n'))
+    def test_launch_torpedo_hit_klingon(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        command_prompt() # Raise shields
+        command_prompt() # Navigate
+        exp_val=[] # list of strings
+        exp_val.append('')
+        exp_val.append('Photon torpedo fired...')
+        exp_val.append('  [4,5]')
+        exp_val.append('  [4,4]')
+        exp_val.append('  [4,3]')
+        exp_val.append('  [5,3]')
+        exp_val.append('  [5,2]')
+        exp_val.append('  [5,1]')
+        exp_val.append("Klingon ship destroyed at sector [5,1].")
+        exp_val.append('')
+        # Launch torpedo that will hit a klingon
+        act_val = _torpedo_control_launch(2.69)
+        self.assertEqual(exp_val, act_val)
+
+
+    # Apply a patch() decorator to replace keyboard input from user with a string.
+    # The patch should result in raising shields and then navigating to a sector with a klingon and a starbase
+    @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n5\n1\n'))
+    def test_launch_torpedo_hit_nothing(self):
+        random.seed(1234567890)
+        gm=game
+        initialize_game()
+        generate_sector()
+        command_prompt() # Raise shields
+        command_prompt() # Navigate
+        exp_val=[] # list of strings
+        exp_val.append('')
+        exp_val.append('Photon torpedo fired...')
+        exp_val.append('  [4,5]')
+        exp_val.append('  [4,6]')
+        exp_val.append('  [4,7]')
+        exp_val.append('  [4,8]')
+        exp_val.append("Photon torpedo failed to hit anything.")
+        exp_val.append("Enterprise hit by ship at sector [5,1]. Shields dropped to 320.")
+        exp_val.append('')
+        # Launch torpedo that will hit nothing
+        act_val = _torpedo_control_launch(7)
         self.assertEqual(exp_val, act_val)
 
 

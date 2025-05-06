@@ -117,7 +117,8 @@ def command_prompt():
         output = phaser_controls()
         print_strings(output)
     elif command == "tor":
-        torpedo_control()
+        output = torpedo_control()
+        print_strings(output)
     elif command == "she":
         shield_controls()
     elif command == "com":
@@ -571,26 +572,76 @@ def long_range_scan():
 
 
 def torpedo_control():
+    """
+    Entry point for full torpedo control algorithm.
+    :return: List of strings to be printed, e.g., using print_strings()
+    """
+    ret_val=[] # list of strings
+    (possible,output) = _torpedo_control_precheck()
+    for i in output:
+        ret_val.append(i)
+    if not possible:
+        return ret_val
+    (possible, output, direction) = _torpedo_controls_input()
+    for i in output:
+        ret_val.append(i)
+    if not possible:
+        return ret_val
+    output = _torpedo_control_launch(direction)
+    for i in output:
+        ret_val.append(i)
+    return ret_val
+
+
+def _torpedo_control_precheck():
+    """
+     Check that launching a torpedo is possible.
+    :return: Tuple (Is it possible to launch torpedo True/False, list of strings to be printed), as tuple (boolean, list of strings)
+    """
     global game
+    ret_val=[] # list of strings
+    possible = True
     if game.photon_damage > 0:
-        print("Photon torpedo control is damaged. Repairs are underway.")
-        print
-        return
-    if game.photon_torpedoes == 0:
-        print("Photon torpedoes exhausted.")
-        print
-        return
-    if len(game.klingon_ships) == 0:
-        print("There are no Klingon ships in this quadrant.")
-        print
-        return
+        possible = False
+        ret_val.append("Photon torpedo control is damaged. Repairs are underway.")
+        ret_val.append("")
+    elif game.photon_torpedoes == 0:
+        possible = False
+        ret_val.append("Photon torpedoes exhausted.")
+        ret_val.append("")
+    elif len(game.klingon_ships) == 0:
+        possible = False
+        ret_val.append("There are no Klingon ships in this quadrant.")
+        ret_val.append("")
+    return (possible, ret_val)
+
+
+def _torpedo_controls_input():
+    """
+    Get input requrired to launch torpedo.
+    :return: Tuple (Is it possible to launch torpedo True/False, list of strings to be printed, torpedo direction),
+                as tuple (boolean, list of strings, float)
+    """
+    possible=True
+    output=[] # list of strings
     direction = input_double("Enter firing direction (1.0--9.0, 1=right,3=up,5=left,7=down): ")
     if not direction or direction < 1.0 or direction > 9.0:
-        print("Invalid direction.")
-        print
-        return
-    print
-    print("Photon torpedo fired...")
+        possible=False
+        output.append("Invalid direction.")
+        output.append("")
+    return (possible, output, direction)
+
+
+def _torpedo_control_launch(direction):
+    """
+    Actually launch the torpedo.
+    :parameter direction: Direction in which to fire the torpedo, float
+    :return: List of strings to be printed, e.g., using print_strings()
+    """
+    global game
+    ret_val=[] # list of strings
+    ret_val.append("")
+    ret_val.append("Photon torpedo fired...")
     game.photon_torpedoes -= 1
     angle = -(pi * (direction - 1.0) / 4.0)
     if random.randint(0, 2) == 0:
@@ -607,12 +658,12 @@ def torpedo_control():
         new_x = int(round(x))
         new_y = int(round(y))
         if last_x != new_x or last_y != new_y:
-            print("  [{0},{1}]".format(new_x + 1, new_y + 1))
+            ret_val.append("  [{0},{1}]".format(new_x + 1, new_y + 1))
             last_x = new_x
             last_y = new_y
         for ship in game.klingon_ships:
             if ship.sector_x == new_x and ship.sector_y == new_y:
-                print("Klingon ship destroyed at sector [{0},{1}].".format(ship.sector_x + 1, ship.sector_y + 1))
+                ret_val.append("Klingon ship destroyed at sector [{0},{1}].".format(ship.sector_x + 1, ship.sector_y + 1))
                 game.sector[ship.sector_y][ship.sector_x] = sector_type.empty
                 game.klingons -= 1
                 game.klingon_ships.remove(ship)
@@ -625,11 +676,11 @@ def torpedo_control():
             game.starbases -= 1
             game.quadrants[game.quadrant_y][game.quadrant_x].starbase = False
             game.sector[new_y][new_x] = sector_type.empty
-            print("The Enterprise destroyed a Federation starbase at sector [{0},{1}]!".format(new_x + 1, new_y + 1))
+            ret_val.append("The Enterprise destroyed a Federation starbase at sector [{0},{1}]!".format(new_x + 1, new_y + 1))
             hit = True
             break
         elif game.sector[new_y][new_x] == sector_type.star:
-            print("The torpedo was captured by a star's gravitational field at sector [{0},{1}].".format(
+            ret_val.append("The torpedo was captured by a star's gravitational field at sector [{0},{1}].".format(
                 new_x + 1, new_y + 1
             ))
             hit = True
@@ -637,12 +688,14 @@ def torpedo_control():
         x += vx
         y += vy
     if not hit:
-        print("Photon torpedo failed to hit anything.")
+        ret_val.append("Photon torpedo failed to hit anything.")
     if len(game.klingon_ships) > 0:
         print
         (output,something)=klingons_attack()
-        print_strings(output)
-    print
+        for i in output:
+            ret_val.append(i)
+    ret_val.append("")
+    return ret_val
 
 
 def navigation():
