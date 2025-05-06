@@ -12,7 +12,7 @@ from startrek import distance, compute_direction, print_game_status, command_pro
 from startrek import input_double, phaser_controls, sector_type, generate_sector, read_sector
 from startrek import short_range_scan, is_docking_location, is_sector_region_empty, print_strings, print_mission
 from startrek import print_sector_row, print_sector, long_range_scan, run, _torpedo_control_precheck, _torpedo_controls_input
-from startrek import _torpedo_control_launch
+from startrek import _torpedo_control_launch, _shield_controls_precheck
 from strings import computerStrings
 
 # TODO: Consider factoring out some common setup, like initize_game(), generate_sector(), and separate the tests that
@@ -929,7 +929,9 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='--- Shield Controls ----------------\n'
         exp_val+='add = Add energy to shields.\n'
         exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='\n'
         exp_val+='Enter shield control command: '
+        exp_val+='\n'
         exp_val+='Invalid command.'
         command_prompt()
         # Get the captured output
@@ -956,8 +958,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='--- Shield Controls ----------------\n'
         exp_val+='add = Add energy to shields.\n'
         exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='\n'
         exp_val+='Enter shield control command: '
         exp_val+='Enter amount of energy (1--3000): '
+        exp_val+='\n'
         exp_val+='Invalid amount of energy.'
         command_prompt()
         # Get the captured output
@@ -984,8 +988,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='--- Shield Controls ----------------\n'
         exp_val+='add = Add energy to shields.\n'
         exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='\n'
         exp_val+='Enter shield control command: '
         exp_val+='Enter amount of energy (1--3000): '
+        exp_val+='\n'
         exp_val+='Invalid amount of energy.'
         command_prompt()
         # Get the captured output
@@ -1012,8 +1018,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='--- Shield Controls ----------------\n'
         exp_val+='add = Add energy to shields.\n'
         exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='\n'
         exp_val+='Enter shield control command: '
         exp_val+='Enter amount of energy (1--3000): '
+        exp_val+='\n'
         exp_val+='Invalid amount of energy.'
         command_prompt()
         # Get the captured output
@@ -1040,8 +1048,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='--- Shield Controls ----------------\n'
         exp_val+='add = Add energy to shields.\n'
         exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='\n'
         exp_val+='Enter shield control command: '
-        exp_val+='Enter amount of energy (1--3000): '
+        exp_val+='Enter amount of energy (1--3000): \n'
+        exp_val+='\n'
         exp_val+='Shield strength is now 500. Energy level is now 2500.'
         command_prompt()
         # Get the captured output
@@ -1070,8 +1080,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='--- Shield Controls ----------------\n'
         exp_val+='add = Add energy to shields.\n'
         exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='\n'
         exp_val+='Enter shield control command: '
-        exp_val+='Enter amount of energy (1--500): '
+        exp_val+='Enter amount of energy (1--500): \n'
+        exp_val+='\n'
         exp_val+='Shield strength is now 250. Energy level is now 2750.'
         command_prompt()
         # Get the captured output
@@ -1100,8 +1112,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='--- Shield Controls ----------------\n'
         exp_val+='add = Add energy to shields.\n'
         exp_val+='sub = Subtract energy from shields.\n'
+        exp_val+='\n'
         exp_val+='Enter shield control command: '
         exp_val+='Enter amount of energy (1--500): '
+        exp_val+='\n'
         exp_val+='Invalid amount of energy.'
         command_prompt()
         # Get the captured output
@@ -2003,7 +2017,6 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
-
     def test_torpedo_precheck_damaged(self):
         random.seed(1234567890)
         gm=game
@@ -2174,6 +2187,18 @@ class Test_test_startrek(unittest.TestCase):
         # Launch torpedo that will hit nothing
         act_val = _torpedo_control_launch(7)
         self.assertEqual(exp_val, act_val)
+
+    def test_shields_precheck_damaged(self):
+        gm=game
+        # Artificially damage the shield control
+        gm.shield_control_damage=1
+        exp_val=[] # list of strings
+        exp_val.append('Shield control is damaged. Repairs are underway.')
+        exp_val.append('')
+        exp_val=(False,exp_val)
+        act_val = _shield_controls_precheck()
+        # Assert the output matches the expected value
+        self.assertTupleEqual(exp_val, act_val)
 
 
 if __name__ == '__main__':

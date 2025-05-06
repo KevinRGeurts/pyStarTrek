@@ -120,7 +120,8 @@ def command_prompt():
         output = torpedo_control()
         print_strings(output)
     elif command == "she":
-        shield_controls()
+        output = shield_controls()
+        print_strings(output)
     elif command == "com":
         computer_controls()
     elif command.startswith('qui') or command.startswith('exi'):
@@ -386,39 +387,101 @@ def _phaser_controls_fire(phaser_energy):
 
 
 def shield_controls():
+    """
+    Entry point for full shield control algorithm.
+    :return: List of strings to be printed, e.g., using print_strings()
+    """
+    ret_val=[] # list of strings
+    (possible,output) = _shield_controls_precheck()
+    for i in output:
+        ret_val.append(i)
+    if not possible:
+        return ret_val
+    else:
+        # TODO: Try to clean up this hack, which is used to ensure that shield command options are printed
+        # before shield command is requested. 
+        print_strings(ret_val)
+        ret_val.clear()
+    (possible, output, she_add, energy_xfer) = _shield_controls_input()
+    for i in output:
+        ret_val.append(i)
+    if not possible:
+        return ret_val
+    output = _shield_controls_adjust(she_add, energy_xfer)
+    for i in output:
+        ret_val.append(i)
+    return ret_val
+
+def _shield_controls_precheck():
+    """
+    Check that adjusting shields is possible.
+    :return: Tuple (Is it possible to adjust shields True/False, list of strings to be printed), as tuple (boolean, list of strings)
+    """
     global game
-    print("--- Shield Controls ----------------")
-    print("add = Add energy to shields.")
-    print("sub = Subtract energy from shields.")
-    print
+    output=[] # list of strings
+    possible = True
+    if game.shield_control_damage > 0:
+        possible = False
+        output.append("Shield control is damaged. Repairs are underway.")
+    else:
+        output.append("--- Shield Controls ----------------")
+        output.append("add = Add energy to shields.")
+        output.append("sub = Subtract energy from shields.")
+    output.append("")
+    return (possible, output)
+
+def _shield_controls_input():
+    """
+    Get input required to adjust shields.
+    :return: Tuple (Is it possible to adjust shields True/False, list of strings to be printed, shield command=add Ture/False, energy to transfer),
+                as tuple (boolean, list of strings, boolean, float)
+    """
+    global game
+    possible=True
+    output=[] # list of strings
+    she_add=None
+    energy_xfer=0
     command = input("Enter shield control command: ").strip().lower()
-    print
+    output.append("")
     if command == "add":
-        adding = True
+        she_add = True
         max_transfer = game.energy
     elif command == "sub":
-        adding = False
+        she_add = False
         max_transfer = game.shield_level
     else:
-        print("Invalid command.")
-        print
-        return
-    transfer = input_double(
+        possible=False
+        output.append("Invalid command.")
+        output.append("")
+        return (possible, output, she_add, energy_xfer)
+    energy_xfer = input_double(
         "Enter amount of energy (1--{0}): ".format(max_transfer))
-    if not transfer or transfer < 1 or transfer > max_transfer:
-        print("Invalid amount of energy.")
-        print
-        return
-    print
-    if adding:
-        game.energy -= int(transfer)
-        game.shield_level += int(transfer)
-    else:
-        game.energy += int(transfer)
-        game.shield_level -= int(transfer)
-    print("Shield strength is now {0}. Energy level is now {1}.".format(game.shield_level, game.energy))
-    print
+    if not energy_xfer or energy_xfer < 1 or energy_xfer > max_transfer:
+        possible=False
+        output.append("Invalid amount of energy.")
+        output.append("")
+        return (possible, output, she_add, energy_xfer)
+    output.append("")
+    return (possible, output, she_add, energy_xfer)
 
+def _shield_controls_adjust(she_add, energy_xfer):
+    """
+    Actually make the adjustment to the shields.
+    :parameter she_add: Are we adding or subracting energy from the shields where True=adding, boolean
+    :parameter energy_xfer: Amount of energy to transfer, float
+    :return: List of strings to be printed, as list of strings
+    """
+    global game
+    ret_val=[] # list of strings
+    if she_add:
+        game.energy -= int(energy_xfer)
+        game.shield_level += int(energy_xfer)
+    else:
+        game.energy += int(energy_xfer)
+        game.shield_level -= int(energy_xfer)
+    ret_val.append("Shield strength is now {0}. Energy level is now {1}.".format(game.shield_level, game.energy))
+    ret_val.append("")
+    return ret_val
 
 # TODO: Figure out what the True/False return value of this function is intended to indicate.
 def klingons_attack():
