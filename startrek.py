@@ -59,17 +59,26 @@ class Game():
 game = Game()
 
 
-def run():
+def run(game_ai=False):
+    """
+    Main entry point for playing a game, either manually, or using game AI.
+    :param game_ai: If True, run the game using AI. If False, run the game manually.
+    :return: None
+    """
     global game
     print_strings(strings.titleStrings)
-    while True:
-        initialize_game()
-        print_mission()
-        generate_sector()
-        print_strings(strings.commandStrings)
-        while game.energy > 0 and not game.destroyed and game.klingons > 0 and game.time_remaining > 0:
+    initialize_game()
+    print_mission()
+    generate_sector()
+    print_strings(strings.commandStrings)
+    while game.energy > 0 and not game.destroyed and game.klingons > 0 and game.time_remaining > 0:
+        if not game_ai:
             command_prompt()
-            print_game_status()
+        else:
+            # TODO: Implement ai game play entry point.
+            raise NotImplementedError("Game AI not implemented yet.")
+        print_game_status()
+    return None
 
 
 def print_strings(string_list):
@@ -1187,11 +1196,17 @@ def initialize_game():
 
 
 if __name__ == '__main__':
-    if len(sys.argv)>1 and sys.argv[1]=='/d':
-        # '/d' = Debug mode
-        # Seed the random number generator.
-        # Intended to sync game play with a unittest case.
-        sv=1234567890
-        random.seed(sv)
-        print('Running in DEBUG mode...')
-    run()
+    game_ai=False
+    if len(sys.argv)>1:
+        if sys.argv[1:].__contains__('/d'):
+            # '/d' = Debug mode
+            # Seed the random number generator.
+            # Intended to sync game play with a unittest case.
+            sv=1234567890
+            random.seed(sv)
+            print('Running in DEBUG mode...')
+        if sys.argv[1:].__contains__('/ai'):
+            # '/ai' = AI mode, where game AI will be used to automatically play the game
+            game_ai=True
+            print('Running in AI mode...')
+    run(game_ai)

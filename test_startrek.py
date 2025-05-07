@@ -1884,8 +1884,13 @@ class Test_test_startrek(unittest.TestCase):
     def test_run(self):
         random.seed(1234567890)
         # Run the game. Shoud raise a SystemExit exception
-        # NOTE: This is quite a crude test of runI()
+        # NOTE: This is quite a crude test of run()
         self.assertRaises(SystemExit, run)
+
+    def test_run_ai(self):
+        random.seed(1234567890)
+        # NOTE: This is quite a crude test of run().
+        self.assertRaises(NotImplementedError, run, True)
 
     def test_long_range_scan_damaged(self):
         self.maxDiff=None
