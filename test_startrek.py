@@ -1160,8 +1160,9 @@ class Test_test_startrek(unittest.TestCase):
         # Navigate within sector
         exp_val='Enter command: '
         exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
-        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Enter warp factor (0.1--8.0): \n'
         exp_val+='Warp engines engaged.\n'
+        exp_val+='\n'
         exp_val+='X: 1  2  3  4  5  6  7  8\n'
         exp_val+='Y:-=--=--=--=--=--=--=--=-          Region: Wolf 359\n'
         exp_val+='1             +K+                    Quadrant: [2,8]\n'
@@ -1267,9 +1268,11 @@ class Test_test_startrek(unittest.TestCase):
         # Navigate to dock with starbase
         exp_val='Enter command: '
         exp_val+='Warp engines damaged. Maximum warp factor: 0.8999999999999999\n'
+        exp_val+='\n'
         exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
-        exp_val+='Enter warp factor (0.1--0.8999999999999999): '
+        exp_val+='Enter warp factor (0.1--0.8999999999999999): \n'
         exp_val+='Warp engines engaged.\n'
+        exp_val+='\n'
         exp_val+='X: 1  2  3  4  5  6  7  8\n'
         exp_val+='Y:-=--=--=--=--=--=--=--=-          Region: Wolf 359\n'
         exp_val+='1                                    Quadrant: [2,8]\n'
@@ -1605,6 +1608,7 @@ class Test_test_startrek(unittest.TestCase):
         # Attempt navigation with damage
         exp_val='Enter command: '
         exp_val+='Warp engines damaged. Maximum warp factor: 0.8\n'
+        exp_val+='\n'
         exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
         exp_val+='Enter warp factor (0.1--0.8): '
         exp_val+='Invalid warp factor.'
@@ -1746,7 +1750,7 @@ class Test_test_startrek(unittest.TestCase):
         # Attempt navigation with damage
         exp_val='Enter command: '
         exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
-        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Enter warp factor (0.1--8.0): \n'
         exp_val+='Unable to comply. Insufficient energy to travel that speed.'
         command_prompt()
         # Get the captured output
@@ -1761,6 +1765,7 @@ class Test_test_startrek(unittest.TestCase):
     # warp factor that is okay from a damage standpoint, but exceeds remaining energy (6).
     @patch('sys.stdin', StringIO('nav\n1\n6\n'))
     def test_navigation_successful(self):
+        self.maxDiff=None
         random.seed(1234567890)
         gm=game
         initialize_game()
@@ -1771,8 +1776,9 @@ class Test_test_startrek(unittest.TestCase):
         # Attempt navigation with damage
         exp_val='Enter command: '
         exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
-        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Enter warp factor (0.1--8.0): \n'
         exp_val+='Warp engines engaged.\n'
+        exp_val+='\n'
         exp_val+='X: 1  2  3  4  5  6  7  8\n'
         exp_val+='Y:-=--=--=--=--=--=--=--=-          Region: Tau Alpha C\n'
         exp_val+='1              *                     Quadrant: [8,8]\n'
@@ -1797,6 +1803,7 @@ class Test_test_startrek(unittest.TestCase):
     # warp factor (0.3) that run the Enterprise into a star.
     @patch('sys.stdin', StringIO('nav\n3\n0.3\n'))
     def test_navigation_obstacle(self):
+        self.maxDiff=None
         random.seed(1234567890)
         gm=game
         initialize_game()
@@ -1807,9 +1814,11 @@ class Test_test_startrek(unittest.TestCase):
         # Attempt navigation with damage
         exp_val='Enter command: '
         exp_val+='Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): '
-        exp_val+='Enter warp factor (0.1--8.0): '
+        exp_val+='Enter warp factor (0.1--8.0): \n'
         exp_val+='Warp engines engaged.\n'
+        exp_val+='\n'
         exp_val+='Encountered obstacle within quadrant.\n'
+        exp_val+='\n'
         exp_val+='X: 1  2  3  4  5  6  7  8\n'
         exp_val+='Y:-=--=--=--=--=--=--=--=-          Region: Pegos Minor\n'
         exp_val+='1        *                           Quadrant: [3,8]\n'

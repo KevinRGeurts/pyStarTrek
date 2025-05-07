@@ -106,7 +106,8 @@ def command_prompt():
     command = input("Enter command: ").strip().lower()
     print
     if command == "nav":
-        navigation()
+        output = navigation()
+        print_strings(output)
     elif command == "srs":
         scan_res = short_range_scan()
         print_strings(scan_res)
@@ -415,7 +416,7 @@ def shield_controls():
 def _shield_controls_precheck():
     """
     Check that adjusting shields is possible.
-    :return: Tuple (Is it possible to adjust shields True/False, list of strings to be printed), as tuple (boolean, list of strings)
+        :return: Tuple (Is it possible to adjust shields True/False, list of strings to be printed), as tuple (boolean, list of strings)
     """
     global game
     output=[] # list of strings
@@ -762,38 +763,105 @@ def _torpedo_control_launch(direction):
 
 
 def navigation():
+    """
+    Entry point for full navigation algorithm.
+    :return: List of strings to be printed, e.g., using print_strings()
+    """
+    ret_val=[] # list of strings
+    (possible,output,max_warp_factor) = _navigation_precheck()
+    for i in output:
+        ret_val.append(i)
+    if not possible:
+        # TODO: Try to clean up this hack, which is used to ensure that "Warp engines damaged." is printed
+        # before navigation course and warp factor are requested.
+        print_strings(ret_val)
+        ret_val.clear()
+    (possible, output, course, warp_factor) = _navigation_input(max_warp_factor)
+    for i in output:
+        ret_val.append(i)
+    if not possible:
+        return ret_val
+    output = _navigation(course, warp_factor)
+    for i in output:
+        ret_val.append(i)
+    return ret_val
+
+
+def _navigation_precheck():
+    """
+    Check that navigation is possible.
+    :return: Tuple (Is it possible to navigate at full warp factor True/False, list of strings to be printed, maximum warp factor),
+                as tuple (boolean, list of strings, float)
+    """
     global game
+    output=[] # list of strings
+    possible=True
     max_warp_factor = 8.0
     if game.navigation_damage > 0:
+        possible=False
         max_warp_factor = 0.2 + random.randint(0, 8) / 10.0
-        print("Warp engines damaged. Maximum warp factor: {0}".format(max_warp_factor))
-        print
+        output.append("Warp engines damaged. Maximum warp factor: {0}".format(max_warp_factor))
+        output.append("")
+    return (possible, output, max_warp_factor)
+
+
+def _navigation_input(max_warp_factor):
+    """
+    Get input required to navigate.
+    :parameter max_warp_factor: Maximum warp factor, float
+    :return: Tuple (Is navigation possible given requested course and warp factor True/False,
+                    list of strings to be printed, course, warp_factor),
+                as tuple (boolean, list of strings, float, float)
+    """
+    global game
+    output=[] # list of strings
+    possible=True
+    direction=None
+    dist=None
 
     direction = input_double("Enter course (1.0--8.9, 1=right,3=up,5=left,7=down): ")
     if not direction or direction < 1.0 or direction > 9.0:
-        print("Invalid course.")
-        print
-        return
+        possible=False
+        output.append("Invalid course.")
+        output.append("")
+        return (possible, output, direction, None)
 
-    dist = input_double(
-        "Enter warp factor (0.1--{0}): ".format(max_warp_factor))
+    dist = input_double("Enter warp factor (0.1--{0}): ".format(max_warp_factor))
     if not dist or dist < 0.1 or dist > max_warp_factor:
-        print("Invalid warp factor.")
-        print
-        return
+        possible=False
+        output.append("Invalid warp factor.")
+        output.append("")
+        return (possible, output, direction, dist)
 
-    print
+    output.append("")
 
-    dist *= 8
-    energy_required = int(dist)
+    distance = dist*8
+    energy_required = int(distance)
     if energy_required >= game.energy:
-        print("Unable to comply. Insufficient energy to travel that speed.")
-        print
-        return
-    else:
-        print("Warp engines engaged.")
-        print
-        game.energy -= energy_required
+        possible=False
+        output.append("Unable to comply. Insufficient energy to travel that speed.")
+        output.append
+        return (possible, output, direction, dist)
+    
+    return (possible, output, direction, dist)
+
+
+def _navigation(course, warp_factor):
+    """
+    Actually navigate the Enterprise.
+    :parameter course: Course to navigate, float
+    :parameter warp_factor: Warp factor, float
+    :return: List of strings to be printed, e.g., using print_strings()
+    """
+    global game
+    ret_val=[] # list of strings
+
+    direction = course
+    dist = warp_factor*8
+    energy_required = int(dist)
+    ret_val.append("Warp engines engaged.")
+    ret_val.append("")
+    game.energy -= energy_required
 
     last_quad_x = game.quadrant_x
     last_quad_y = game.quadrant_y
@@ -808,7 +876,7 @@ def navigation():
     last_sect_x = game.sector_x
     last_sect_y = game.sector_y
     # Empty out the current game sector, from which navigation begins. This sector should always have contained
-    # the Enterprese
+    # the Enterprise
     assert(game.sector[game.sector_y][game.sector_x] == sector_type.enterprise)
     game.sector[game.sector_y][game.sector_x] = sector_type.empty
     obstacle = False
@@ -824,8 +892,8 @@ def navigation():
                 game.sector_x = last_sect_x
                 game.sector_y = last_sect_y
                 game.sector[game.sector_y][game.sector_x] = sector_type.enterprise
-                print("Encountered obstacle within quadrant.")
-                print
+                ret_val.append("Encountered obstacle within quadrant.")
+                ret_val.append("")
                 obstacle = True
                 break
             last_sect_x = sect_x
@@ -871,20 +939,25 @@ def navigation():
         game.time_remaining -= 1
         game.star_date += 1
 
-    print_strings(short_range_scan())
+    scan_res=short_range_scan()
+    for i in scan_res:
+        ret_val.append(i)
 
     if game.docked:
-        print("Lowering shields as part of docking sequence...")
-        print("Enterprise successfully docked with starbase.")
-        print
+        ret_val.append("Lowering shields as part of docking sequence...")
+        ret_val.append("Enterprise successfully docked with starbase.")
+        ret_val.append("")
     else:
         if game.quadrants[game.quadrant_y][game.quadrant_x].klingons > 0 \
                 and last_quad_x == game.quadrant_x and last_quad_y == game.quadrant_y:
             (output,something)=klingons_attack()
-            print_strings(output)
-            print
+            for i in output:
+                ret_val.append(i)
+            ret_val.append("")
         elif not repair_damage():
             induce_damage(-1)
+
+    return ret_val
 
 
 def input_double(prompt):
