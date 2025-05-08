@@ -5,8 +5,9 @@ import strings
 import sys
 
 # local imports
-import glob_vars
-import startrek_actions
+from quadrant import Quadrant
+import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
+import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek_actions.py.
 
 
 class SectorType():
@@ -43,7 +44,7 @@ def run(game_ai=False):
         else:
             # TODO: Implement ai game play entry point.
             play_ai_game()
-            game_ai=False
+            return None
             # raise NotImplementedError("Game AI not implemented yet.")
         print_game_status()
     return None
@@ -1147,7 +1148,7 @@ def initialize_game():
     for i in range(8):
         for j in range(8):
             index = random.randint(0, len(names) - 1)
-            quadrant = glob_vars.Quadrant()
+            quadrant = Quadrant()
             quadrant.name = names[index]
             quadrant.stars = 1 + random.randint(0, 7)
             game.quadrants[i][j] = quadrant

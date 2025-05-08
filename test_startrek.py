@@ -13,19 +13,12 @@ from startrek import short_range_scan, is_docking_location, is_sector_region_emp
 from startrek import print_sector_row, print_sector, long_range_scan, run, _torpedo_control_precheck, _torpedo_controls_input
 from startrek import _torpedo_control_launch, _shield_controls_precheck
 from strings import computerStrings
-import glob_vars
+import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
 # TODO: Consider factoring out some common setup, like initize_game(), generate_sector(), and separate the tests that
 # use that setup into a different unittest.TestCase child.
 
 class Test_test_startrek(unittest.TestCase):
-
-    def test_Quadrant_init(self):
-        quad = glob_vars.Quadrant()
-        exp_val=('', 0, 0, False, False)
-        act_val=(quad.name, quad.klingons, quad.stars, quad.starbase, quad.scanned)
-        self.assertEqual(exp_val, act_val)
-
     def test_SectorType_init(self):
         st = SectorType()
         exp_val=(1, 2, 3, 4, 5)
@@ -1888,9 +1881,9 @@ class Test_test_startrek(unittest.TestCase):
         self.assertRaises(SystemExit, run)
 
     # def test_run_ai(self):
-    #     random.seed(1234567890)
-    #     # NOTE: This is quite a crude test of run().
-    #     self.assertRaises(NotImplementedError, run, True)
+        random.seed(1234567890)
+        # NOTE: This is quite a crude test of run().
+        self.assertRaises(NotImplementedError, run, True)
 
     def test_long_range_scan_damaged(self):
         self.maxDiff=None

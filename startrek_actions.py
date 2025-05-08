@@ -2,8 +2,8 @@
 
 # local imports
 from game_action import GameAction
-import startrek
-import glob_vars
+import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
+import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
 
 class NavigateToQuadrantAction(GameAction):
