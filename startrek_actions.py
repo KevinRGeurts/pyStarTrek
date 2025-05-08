@@ -5,6 +5,7 @@ from game_action import GameAction
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
+# TODO: Create unit tests
 
 class NavigateToQuadrantAction(GameAction):
     """

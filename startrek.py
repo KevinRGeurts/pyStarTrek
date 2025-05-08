@@ -1,11 +1,12 @@
 ﻿# standard imports
-from math import atan2, pi, sqrt, cos, sin
+from math import pi, cos, sin
 import random
 import strings
 import sys
 
 # local imports
 from quadrant import Quadrant
+from utilities import print_strings, compute_direction, distance, input_double
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek_actions.py.
 
@@ -56,12 +57,6 @@ def play_ai_game():
     """
     act=startrek_actions.NavigateToQuadrantAction(qx=7,qy=7)
     act.execute()
-
-
-def print_strings(string_list):
-    for string in string_list:
-        print(string)
-    print
 
 
 def print_game_status():
@@ -140,34 +135,6 @@ def computer_controls():
         print("Invalid computer command.")
         print
     induce_damage(4)
-
-
-def compute_direction(x1, y1, x2, y2):
-    if x1 == x2:
-        if y1 < y2:
-            direction = 7
-        else:
-            direction = 3
-    elif y1 == y2:
-        if x1 < x2:
-            direction = 1
-        else:
-            direction = 5
-    else:
-        dy = abs(y2 - y1)
-        dx = abs(x2 - x1)
-        angle = atan2(dy, dx)
-        if x1 < x2:
-            if y1 < y2:
-                direction = 9.0 - 4.0 * angle / pi
-            else:
-                direction = 1.0 + 4.0 * angle / pi
-        else:
-            if y1 < y2:
-                direction = 5.0 + 4.0 * angle / pi
-            else:
-                direction = 5.0 - 4.0 * angle / pi
-    return direction
 
 
 def navigation_calculator():
@@ -502,12 +469,6 @@ def klingons_attack():
     return (ret_val,False)
 
 
-def distance(x1, y1, x2, y2):
-    x = x2 - x1
-    y = y2 - y1
-    return sqrt(x * x + y * y)
-
-
 def induce_damage(item):
     game=glob_vars.the_game
     if random.randint(0, 6) > 0:
@@ -832,6 +793,7 @@ def _navigation_input(max_warp_factor):
     return (possible, output, direction, dist)
 
 
+# TODO: Return something to indicate hitting an obstacle.
 def _navigation(course, warp_factor):
     """
     Actually navigate the Enterprise.
@@ -944,15 +906,6 @@ def _navigation(course, warp_factor):
             induce_damage(-1)
 
     return ret_val
-
-
-def input_double(prompt):
-    text = input(prompt)
-    try:
-        value = float(text)
-        return value
-    except: # Most likely a ValueError
-        return False
 
 
 def generate_sector():

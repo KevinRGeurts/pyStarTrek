@@ -54,6 +54,10 @@
     <Compile Include="test_startrek.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="test_utilities.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="utilities.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Documentation\" />
