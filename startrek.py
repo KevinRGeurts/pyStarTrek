@@ -8,7 +8,7 @@ import sys
 from quadrant import Quadrant
 from utilities import print_strings, compute_direction, distance, input_double
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
-import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek_actions.py.
+import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 
 
 class SectorType():

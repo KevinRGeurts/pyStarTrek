@@ -45,6 +45,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="strings.py" />
+    <Compile Include="test_startrek_actions.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="test_game_action.py">
       <SubType>Code</SubType>
     </Compile>

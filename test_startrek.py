@@ -1825,7 +1825,7 @@ class Test_test_startrek(unittest.TestCase):
         # NOTE: This is quite a crude test of run()
         self.assertRaises(SystemExit, run)
 
-    # def test_run_ai(self):
+    def test_run_ai(self):
         random.seed(1234567890)
         # NOTE: This is quite a crude test of run().
         self.assertRaises(NotImplementedError, run, True)
