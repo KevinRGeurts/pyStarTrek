@@ -5,7 +5,6 @@ from game_action import GameAction
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
-# TODO: Create unit tests
 
 class NavigateToQuadrantAction(GameAction):
     """
@@ -41,8 +40,9 @@ class NavigateToQuadrantAction(GameAction):
         # Perform navigation
         # TODO: Handle hitting an obstacle leaving current quadrant
         output = startrek._navigation(direction, dist)
-        # TODO: Check if navigation was successful
-        self._completed = True
+        if gm.quadrant_x == self.qx and gm.quadrant_y == self.qy:
+            # Navigation was successful
+            self._completed = True
         startrek.print_strings(output)
         
 
