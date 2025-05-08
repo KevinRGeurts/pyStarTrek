@@ -1,17 +1,12 @@
-﻿from math import atan2, pi, sqrt, cos, sin
+﻿# standard imports
+from math import atan2, pi, sqrt, cos, sin
 import random
 import strings
 import sys
 
-
-class Quadrant():
-
-    def __init__(self):
-        self.name = ""
-        self.klingons = 0
-        self.stars = 0
-        self.starbase = False
-        self.scanned = False
+# local imports
+import glob_vars
+import startrek_actions
 
 
 class SectorType():
@@ -30,42 +25,13 @@ class KlingonShip():
         self.shield_level = 0
 
 
-class Game():
-
-    def __init__(self):
-        self.star_date = 0
-        self.time_remaining = 0
-        self.energy = 0
-        self.klingons = 0
-        self.starbases = 0
-        self.quadrant_x, self.quadrant_y = 0, 0
-        self.sector_x, self.sector_y = 0, 0
-        self.shield_level = 0
-        self.navigation_damage = 0
-        self.short_range_scan_damage = 0
-        self.long_range_scan_damage = 0
-        self.shield_control_damage = 0
-        self.computer_damage = 0
-        self.photon_damage = 0
-        self.phaser_damage = 0
-        self.photon_torpedoes = 0
-        self.docked = False
-        self.destroyed = False
-        self.starbase_x, self.starbase_y = 0, 0
-        self.quadrants = [[Quadrant() for _ in range(8)] for _ in range(8)]
-        self.sector = [[int() for _ in range(8)] for _ in range(8)]
-        self.klingon_ships = []
-
-game = Game()
-
-
 def run(game_ai=False):
     """
     Main entry point for playing a game, either manually, or using game AI.
     :param game_ai: If True, run the game using AI. If False, run the game manually.
     :return: None
     """
-    global game
+    game=glob_vars.the_game
     print_strings(strings.titleStrings)
     initialize_game()
     print_mission()
@@ -76,9 +42,19 @@ def run(game_ai=False):
             command_prompt()
         else:
             # TODO: Implement ai game play entry point.
-            raise NotImplementedError("Game AI not implemented yet.")
+            play_ai_game()
+            game_ai=False
+            # raise NotImplementedError("Game AI not implemented yet.")
         print_game_status()
     return None
+
+
+def play_ai_game():
+    """
+    Play the game using AI.
+    """
+    act=startrek_actions.NavigateToQuadrantAction(qx=7,qy=7)
+    act.execute()
 
 
 def print_strings(string_list):
@@ -88,7 +64,7 @@ def print_strings(string_list):
 
 
 def print_game_status():
-    global game
+    game=glob_vars.the_game
     if game.destroyed:
         print("MISSION FAILED: ENTERPRISE DESTROYED!!!")
         print
@@ -141,7 +117,7 @@ def command_prompt():
 
 
 def computer_controls():
-    global game
+    game=glob_vars.the_game
     if game.computer_damage > 0:
         print("The main computer is damaged. Repairs are underway.")
         print
@@ -194,7 +170,7 @@ def compute_direction(x1, y1, x2, y2):
 
 
 def navigation_calculator():
-    global game
+    game=glob_vars.the_game
     print
     print("Enterprise located in quadrant [%s,%s]." % (game.quadrant_x + 1, game.quadrant_y + 1))
     print
@@ -221,7 +197,7 @@ def navigation_calculator():
 
 
 def starbase_calculator():
-    global game
+    game=glob_vars.the_game
     print
     if game.quadrants[game.quadrant_y][game.quadrant_x].starbase:
         print("Starbase in sector [%s,%s]." % (game.starbase_x + 1, game.starbase_y + 1))
@@ -235,7 +211,7 @@ def starbase_calculator():
 
 
 def photon_torpedo_calculator():
-    global game
+    game=glob_vars.the_game
     print
     if len(game.klingon_ships) == 0:
         print("There are no Klingon ships in this quadrant.")
@@ -251,7 +227,7 @@ def photon_torpedo_calculator():
 
 
 def display_status():
-    global game
+    game=glob_vars.the_game
     print
     print("               Time Remaining: {0}".format(game.time_remaining))
     print("      Klingon Ships Remaining: {0}".format(game.klingons))
@@ -267,7 +243,7 @@ def display_status():
 
 
 def display_galactic_record():
-    global game
+    game=glob_vars.the_game
     print
     sb = ""
     print("-------------------------------------------------")
@@ -323,7 +299,7 @@ def _phaser_control_precheck():
     Check that firing phasers is possible.
     :return: Tuple (Is it possible to fire phasers True/False, list of strings to be printed), as tuple (boolean, list of strings)
     """
-    global game
+    game=glob_vars.the_game
     output=[] # list of strings
     possible=True
     if game.phaser_damage > 0:
@@ -345,7 +321,7 @@ def _phaser_controls_input():
     :return: Tuple (Is it possible to fire phasers True/False, list of strings to be printed, phaser energy level),
                 as tuple (boolean, list of strings, float)
     """
-    global game
+    game=glob_vars.the_game
     possible=True
     output=[] # list of strings
     phaser_energy = input_double("Enter phaser energy (1--{0}): ".format(game.energy))
@@ -362,7 +338,7 @@ def _phaser_controls_fire(phaser_energy):
     :parameter phaser_energy: Amount of energy to fire phasers with, float
     :return: Tuple (List of strings to be printed, Numnber of destroyed klingon ships), as type
     """
-    global game
+    game=glob_vars.the_game
     ret_val=[] # list of strings
     ret_val.append("")
     ret_val.append("Firing phasers...")
@@ -427,7 +403,7 @@ def _shield_controls_precheck():
     Check that adjusting shields is possible.
         :return: Tuple (Is it possible to adjust shields True/False, list of strings to be printed), as tuple (boolean, list of strings)
     """
-    global game
+    game=glob_vars.the_game
     output=[] # list of strings
     possible = True
     if game.shield_control_damage > 0:
@@ -446,7 +422,7 @@ def _shield_controls_input():
     :return: Tuple (Is it possible to adjust shields True/False, list of strings to be printed, shield command=add Ture/False, energy to transfer),
                 as tuple (boolean, list of strings, boolean, float)
     """
-    global game
+    game=glob_vars.the_game
     possible=True
     output=[] # list of strings
     she_add=None
@@ -481,7 +457,7 @@ def _shield_controls_adjust(she_add, energy_xfer):
     :parameter energy_xfer: Amount of energy to transfer, float
     :return: List of strings to be printed, as list of strings
     """
-    global game
+    game=glob_vars.the_game
     ret_val=[] # list of strings
     if she_add:
         game.energy -= int(energy_xfer)
@@ -499,7 +475,7 @@ def klingons_attack():
     Handle klingon ships attacking the Enterprise.
     :return: Tuple (List of strings to be printed, e.g., using print_strings(), bool?), as tuple
     """
-    global game
+    game=glob_vars.the_game
     ret_val=[] # list of strings
     if len(game.klingon_ships) > 0:
         for ship in game.klingon_ships:
@@ -532,7 +508,7 @@ def distance(x1, y1, x2, y2):
 
 
 def induce_damage(item):
-    global game
+    game=glob_vars.the_game
     if random.randint(0, 6) > 0:
         return
     damage = 1 + random.randint(0, 4)
@@ -563,7 +539,7 @@ def induce_damage(item):
 
 
 def repair_damage():
-    global game
+    game=glob_vars.the_game
     if game.navigation_damage > 0:
         game.navigation_damage -= 1
         if game.navigation_damage == 0:
@@ -614,7 +590,7 @@ def long_range_scan():
     Return long range scan display.
     :return: List of strings to be printed, e.g., using print_strings()
     """
-    global game
+    game=glob_vars.the_game
     ret_val=[] # list of strings
     if game.long_range_scan_damage > 0:
         ret_val.append("Long range scanner is damaged. Repairs are underway.")
@@ -671,7 +647,7 @@ def _torpedo_control_precheck():
      Check that launching a torpedo is possible.
     :return: Tuple (Is it possible to launch torpedo True/False, list of strings to be printed), as tuple (boolean, list of strings)
     """
-    global game
+    game=glob_vars.the_game
     ret_val=[] # list of strings
     possible = True
     if game.photon_damage > 0:
@@ -711,7 +687,7 @@ def _torpedo_control_launch(direction):
     :parameter direction: Direction in which to fire the torpedo, float
     :return: List of strings to be printed, e.g., using print_strings()
     """
-    global game
+    game=glob_vars.the_game
     ret_val=[] # list of strings
     ret_val.append("")
     ret_val.append("Photon torpedo fired...")
@@ -802,7 +778,7 @@ def _navigation_precheck():
     :return: Tuple (Is it possible to navigate at full warp factor True/False, list of strings to be printed, maximum warp factor),
                 as tuple (boolean, list of strings, float)
     """
-    global game
+    game=glob_vars.the_game
     output=[] # list of strings
     possible=True
     max_warp_factor = 8.0
@@ -822,7 +798,7 @@ def _navigation_input(max_warp_factor):
                     list of strings to be printed, course, warp_factor),
                 as tuple (boolean, list of strings, float, float)
     """
-    global game
+    game=glob_vars.the_game
     output=[] # list of strings
     possible=True
     direction=None
@@ -862,7 +838,7 @@ def _navigation(course, warp_factor):
     :parameter warp_factor: Warp factor, float
     :return: List of strings to be printed, e.g., using print_strings()
     """
-    global game
+    game=glob_vars.the_game
     ret_val=[] # list of strings
 
     direction = course
@@ -979,7 +955,7 @@ def input_double(prompt):
 
 
 def generate_sector():
-    global game
+    game=glob_vars.the_game
     quadrant = game.quadrants[game.quadrant_y][game.quadrant_x]
     starbase = quadrant.starbase
     stars = quadrant.stars
@@ -1045,7 +1021,7 @@ def read_sector(i, j):
     :parameter i: Row in sector, or y-index in sector, 0-indexed, so valid range is 0..7
     :parameter j: Column in sector, or x-index in sector, 0-indexed, so valid range is 0..7
     """
-    global game
+    game=glob_vars.the_game
     if i < 0 or j < 0 or i > 7 or j > 7:
         return sector_type.empty
     return game.sector[i][j]
@@ -1056,7 +1032,7 @@ def short_range_scan():
     Return short range scan display.
     :return: List of strings to be printed, e.g., using print_strings()
     """
-    global game
+    game=glob_vars.the_game
     ret_val=[] # List of strings of short range scan output
     if game.short_range_scan_damage > 0:
         ret_val.append("Short range scanner is damaged. Repairs are underway.")
@@ -1075,7 +1051,7 @@ def print_sector(quadrant):
     Return the sector content of a short range scan display.
     :return: List of strings to be printed, e.g., using print_strings()
     """
-    global game
+    game=glob_vars.the_game
     ret_val=[] # list of strings
     game.condition = "GREEN"
     if quadrant.klingons > 0:
@@ -1114,7 +1090,7 @@ def print_sector_row(sb, row, suffix):
     Return one line of the sector content of a short range scan display.
     :return: Strings to be printed or appended into list of strings representing short scan of sector.
     """
-    global game
+    game=glob_vars.the_game
     for column in range(8):
         if game.sector[row][column] == sector_type.empty:
             sb += "   "
@@ -1132,15 +1108,15 @@ def print_sector_row(sb, row, suffix):
 
 
 def print_mission():
-    global game
+    game=glob_vars.the_game
     print("Mission: Destroy {0} Klingon ships in {1} stardates with {2} starbases.".format(
         game.klingons, game.time_remaining, game.starbases))
     print
 
 
 def initialize_game():
-    # gah, globals
-    global game
+    # globals
+    game=glob_vars.the_game
     game.quadrant_x = random.randint(0, 7)
     game.quadrant_y = random.randint(0, 7)
     game.sector_x = random.randint(0, 7)
@@ -1171,7 +1147,7 @@ def initialize_game():
     for i in range(8):
         for j in range(8):
             index = random.randint(0, len(names) - 1)
-            quadrant = Quadrant()
+            quadrant = glob_vars.Quadrant()
             quadrant.name = names[index]
             quadrant.stars = 1 + random.randint(0, 7)
             game.quadrants[i][j] = quadrant
