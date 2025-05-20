@@ -10,6 +10,8 @@ class GameAction(object):
         """
         self._expiry_time=expiry_time
         self._priority=priority
+        # TODO: Consider removing self._completed and using the isComplete() method to check for completion.
+        # Would need to move this member to dummyAction class.
         self._completed=False
 
     @property
@@ -61,3 +63,116 @@ class GameAction(object):
         raise NotImplementedError("Subclasses must implement this method.")
 
 
+class GameActionCombination(GameAction):
+    """
+    This class represents a combination of game actions that can be performed together.
+    """
+    def __init__(self, combo_acts=[]):
+        """
+        :parameter combo_acts: A list of GameAction objects that make up the combination.
+        """
+        super().__init__()
+        self._action_list = [] # List of GameActions in the combination
+        for act in combo_acts:
+            assert(isinstance(act, GameAction))
+            self._action_list.append(act)
+
+    def canInterrupt(self):
+        """
+        Return whether this combination of actions can be interrupted by another action.
+        :return: True if the combination of actions can be interrupted, False otherwise, as boolean.
+        """
+        # The combination can be interrupted if any of its subactions can be interrupted.
+        for act in self._action_list:
+            if act.canInterrupt():
+                return True
+        return False
+
+    def canDoBoth(self, other_action):
+        """
+        Return whether this combination action can be done at the same time as another action.
+        :param other_action: The other action to check against, as GameAction object.
+        :return: True if both actions can be done at the same time, False otherwise, as boolean.
+        """
+        assert(isinstance(other_action, GameAction))
+        # Combination is possible if it is possible for all subactions.
+        for act in self._action_list:
+            if not act.canDoBoth(other_action):
+                return False
+        return True
+
+    def isComplete(self):
+        """
+        Return whether this combination action is complete.
+        :return: True if the combination action is complete, False otherwise, as boolean.
+        """
+        # Combination is complete if all subactions are complete.
+        for act in self._action_list:
+            if not act.isComplete():
+                return False
+        return True
+
+    def execute(self):
+        """
+        Execute all subactions in the combination.
+        :return: None
+        """
+        for act in self._action_list:
+            act.execute()
+
+
+class GameActionSequence(GameAction):
+    """
+    This class represents a sequence of game actions that must be performed in order.
+    """
+    def __init__(self, seq_acts=[]):
+        """
+        :parameter seq_acts: A list of GameAction objects that make up the ordered sequence.
+        """
+        super().__init__()
+        self._action_list = [] # List of GameActions in the sequence
+        for act in seq_acts:
+            assert(isinstance(act, GameAction))
+            self._action_list.append(act)
+        self._activeIndex=0 # The index of the currently active (executing) action in the sequence
+
+    def canInterrupt(self):
+        """
+        Return whether this sequence of actions can be interrupted by another action.
+        :return: True if the sequence of actions can be interrupted, False otherwise, as boolean.
+        """
+        # The sequence can be interrupted if the active action can be interrupted. 
+        return self._action_list[self._activeIndex].canInterrupt()
+
+    def canDoBoth(self, other_action):
+        """
+        Return whether this sequence action can be done at the same time as another action.
+        :param other_action: The other action to check against, as GameAction object.
+        :return: True if both actions can be done at the same time, False otherwise, as boolean.
+        """
+        assert(isinstance(other_action, GameAction))
+        # We can do both if all subactions that have not already been exectued can do both
+        for i in range(self._activeIndex, len(self._action_list)):
+            if not self._action_list[i].canDoBoth(other_action):
+                return False
+        return True
+
+    def isComplete(self):
+        """
+        Return whether this sequence action is complete.
+        :return: True if the sequence action is complete, False otherwise, as boolean.
+        """
+        #  Sequence is complete if all subactions are complete.
+        return self._activeIndex >= len(self._action_list)
+
+    def execute(self):
+        """
+        Execute subactions in the sequence one at a time and in order.
+        :return: None
+        """
+        # Execute the current action in the sequence
+        self._action_list[self._activeIndex].execute()
+
+        # If current action is complete, move to the next action in the sequence
+        if self._action_list[self._activeIndex].isComplete():
+            self._activeIndex += 1

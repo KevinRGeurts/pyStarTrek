@@ -30,6 +30,9 @@
     <Compile Include="action_manager.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="dummy_actions.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="game.py">
       <SubType>Code</SubType>
     </Compile>
