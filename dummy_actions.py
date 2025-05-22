@@ -8,6 +8,7 @@ and GameActionSequence classes.
 
 # local imports
 from game_action import GameAction
+from game_goal import GameGoal, GoalInsistence
 
 class dummyAction(GameAction):
     """
@@ -53,5 +54,14 @@ class dummyAction(GameAction):
         """
         self._completed = True
         return None
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with this action.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with this action, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        return GoalInsistence.LOW
 
 

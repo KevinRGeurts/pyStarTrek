@@ -1,3 +1,6 @@
+from game_goal import GameGoal, GoalInsistence
+
+
 class GameAction(object):
     """
     This class represents a game action that can be performed by a player.
@@ -60,6 +63,17 @@ class GameAction(object):
         """
         raise NotImplementedError("Subclasses must implement this method.")
 
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with this action. This method should be overridden by subclasses to
+            provide specific goal insistence change behavior.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with this action, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        # By default, here in the base class, we assume that the action does not change any goal.
+        return GoalInsistence.ZERO
+
 
 class GameActionCombination(GameAction):
     """
@@ -118,6 +132,19 @@ class GameActionCombination(GameAction):
         for act in self._action_list:
             act.execute()
 
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with this combination action.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with this combination action, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        # Add up the contributions of all subactions to the goal change, and return the negative of this total
+        total = 0
+        for act in self._action_list:
+            total += act.getGoalChange(goal)
+        return -total
+
 
 class GameActionSequence(GameAction):
     """
@@ -174,3 +201,16 @@ class GameActionSequence(GameAction):
         # If current action is complete, move to the next action in the sequence
         if self._action_list[self._activeIndex].isComplete():
             self._activeIndex += 1
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with this action sequence.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with this action sequence, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        # Add up the contributions of all subactions to the goal change, and return the negative of this total
+        total = 0
+        for act in self._action_list:
+            total += act.getGoalChange(goal)
+        return -total

@@ -3,6 +3,7 @@ import unittest
 
 # local imports
 from game_action import GameAction, GameActionCombination, GameActionSequence
+from game_goal import GameGoal, GoalInsistence
 from dummy_actions import dummyAction
 
 class Test_GameAction(unittest.TestCase):
@@ -45,6 +46,18 @@ class Test_GameAction(unittest.TestCase):
     def test_execute(self):
         act = GameAction()
         self.assertRaises(NotImplementedError, act.execute)
+
+    def test_getGoalChange_fail(self):
+        act = GameAction()
+        goal=float(1.0)  # Invalid type
+        self.assertRaises(AssertionError, act.getGoalChange, goal)
+
+    def test_getGoalChange(self):
+        act = GameAction()
+        goal = GameGoal("Test Goal")
+        exp_val=GoalInsistence.ZERO
+        act_val=act.getGoalChange(goal)
+        self.assertEqual(act_val, exp_val)
 
 
 class Test_GameActionCombination(unittest.TestCase):
@@ -107,6 +120,22 @@ class Test_GameActionCombination(unittest.TestCase):
         combo.execute()
         # After execution, the action combination should be complete
         self.assertTrue(combo.isComplete())
+
+    def test_getGoalChange_fail(self):
+        act1=dummyAction()
+        act2=dummyAction()
+        combo = GameActionCombination([act1, act2])
+        goal=float(1.0)  # Invalid type
+        self.assertRaises(AssertionError, combo.getGoalChange, goal)
+
+    def test_getGoalChange(self):
+        act1=dummyAction()
+        act2=dummyAction()
+        combo = GameActionCombination([act1, act2])
+        goal = GameGoal("Test Goal")
+        exp_val= -(act1.getGoalChange(goal) + act2.getGoalChange(goal))
+        act_val=combo.getGoalChange(goal)
+        self.assertEqual(act_val, exp_val)
 
 
 class Test_GameActionSequence(unittest.TestCase):
@@ -180,6 +209,22 @@ class Test_GameActionSequence(unittest.TestCase):
         seq.execute()
         seq.execute()
         self.assertTrue(seq.isComplete())
+
+    def test_getGoalChange_fail(self):
+        act1=dummyAction()
+        act2=dummyAction()
+        combo = GameActionSequence([act1, act2])
+        goal=float(1.0)  # Invalid type
+        self.assertRaises(AssertionError, combo.getGoalChange, goal)
+
+    def test_getGoalChange(self):
+        act1=dummyAction()
+        act2=dummyAction()
+        combo = GameActionSequence([act1, act2])
+        goal = GameGoal("Test Goal")
+        exp_val= -(act1.getGoalChange(goal) + act2.getGoalChange(goal))
+        act_val=combo.getGoalChange(goal)
+        self.assertEqual(act_val, exp_val)
 
 
 if __name__ == '__main__':

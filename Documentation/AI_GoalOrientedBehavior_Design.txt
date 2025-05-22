@@ -8,17 +8,18 @@ List of possible goals for Star Trek AI player:
 			the desired quadrant. If this is the case, then NAV to sector and NAV to quadrant should be
 			constructed as a sequential action.
 	Note: SRS and LRS might also be a sequential action, where we try SRS first, and LRS if SRS does not located a klingon ship.
-	Discontentment: Low/zero, when a Klingon ship is located in current sector, or on LRS, or on the galactic record.
+	Insistence: Low/zero, when a Klingon ship is located in current sector, or on LRS, or on the galactic record.
 					High when a Klingon ship is not located in current sector, or on LRS, or on the galactic record.
+	Think this might be a sequential action, where we try SRS, then LRS, then NAV to quadrant.
 (2)	Destroy Klingon ship
 	Actons: TOR, PHA, Nav to sector
 	Note: Nav may be needed within a quadrant to get out of the way of a star that is blocking a torpedo'spath to
 			the klingon ship. (need a function that returns the path). If this is the case, NAV to sector and TOR/PHA
 			should be constructed as a sequential action.
-	Discontentment: Low/zero, when a Klingon ship is destroyed, or when the ship is Dnot in the current quadrant.
+	Insistence: Low/zero, when a Klingon ship is destroyed, or when the ship is Dnot in the current quadrant.
 					High when a Klingon ship is in the current quadrant, and not destroyed.
 (3) Repair Damage, by:
-	Discontentment: Low/zero, when the ship is repaired, or when the ship is not damaged.
+	Insistence: Low/zero, when the ship is repaired, or when the ship is not damaged.
 					High when the ship is damaged, and not repaired.
 	(3a.1) Find Starbase
 	Actions: SRS, LRS, NAV to quadrant
@@ -27,7 +28,7 @@ List of possible goals for Star Trek AI player:
 	(3b.1) Wait for repairs to be completed by Enterprise crew
 	This is do nothing but suffer the consequences of limited ability, while navigating as best as possible.
 (4) Restore energy, by:
-	Discontentment: Low/zero, when the ship is fully energized.
+	Insistence: Low/zero, when the ship is fully energized.
 					Increases continusously as energy reserves are depleted, but probably not linearly.
 					High when energy reserves drop below a value requred to hold shields, fire phasers, navigate.
 	(4a.1) Find Starbase
@@ -35,7 +36,7 @@ List of possible goals for Star Trek AI player:
 	(4a.2) Dock with Starbase
 	Actions: NAV to sector
 (5) Restore torpedoes, by:
-	Discontentment: Low/zero, when the ship is fully stocked with torpedoes.
+	Insistence: Low/zero, when the ship is fully stocked with torpedoes.
 					Increases continusously as torpedoes are depleted, but probably not linearly.
 					High when torpedoes are gone.
 	(4a.1) Find Starbase
@@ -43,12 +44,12 @@ List of possible goals for Star Trek AI player:
 	(4a.2) Dock with Starbase
 	Actions: NAV to sector
 (6) Survive (for example, the action here would be to raise shields)
-	Discontentment: Low/zero, when the ship is not in a quadrant with klingon ships.
+	Insistence: Low/zero, when the ship is not in a quadrant with klingon ships, or is, but shields are up.
 					VERY High (getting shields up takes priority) when the ship is in a quadrant with klingon ships and not docked with a starbase.
 	Actions: Raise shields, or increase shield energy
 	Note: Survival could also encompass repairs and energy restoration...
 (7)	Explore galaxy, that is, build out the galactic record
-	Discontentment: High when all other goals are low, since this is a goal when nothing more pressing is going on.
+	Insistence: High when all other goals are low, since this is a goal when nothing more pressing is going on.
 					Low when any other goal is not low.			
 	Actions: LRS, NAV to quadrant, NAV to sector
 	Note: May not be needed since finding Klingon ship is a goal, and finding Starvase is a goal, both of which will 
