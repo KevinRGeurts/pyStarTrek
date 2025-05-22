@@ -6,8 +6,20 @@ from world_interface import WorldInterface
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
+class StarTrekAction(GameAction):
+    """
+    Base class for all Star Trek game actions. Provides access to WorldInterface.
+    """
+    def __init__(self, expiry_time=0, priority=0):
+        """
+        :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
+        :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        """
+        super().__init__(expiry_time, priority)
+        self._world = WorldInterface()
 
-class NavigateToQuadrantAction(GameAction):
+
+class NavigateToQuadrantAction(StarTrekAction):
     """
     Represents an action in a Star Trek game where a player navigates to a specific quadrant.
     """
@@ -23,8 +35,6 @@ class NavigateToQuadrantAction(GameAction):
         self.qx = qx
         assert(qy>=0 and qy<=7)
         self.qy = qy
-        # TODO: Refactore this up to a StarTrekAction parent class.
-        self._world=WorldInterface()
 
     def isComplete(self):
         """
