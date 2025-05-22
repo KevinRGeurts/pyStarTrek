@@ -21,6 +21,7 @@ class dummyAction(GameAction):
         super().__init__(expiry_time, priority)
         self._canInterrupt = False
         self._canDoBoth = False
+        self._completed=False
 
     def canInterrupt(self):
         """
@@ -37,6 +38,13 @@ class dummyAction(GameAction):
         """
         assert(isinstance(other_action, GameAction))
         return self._canDoBoth
+
+    def isComplete(self):
+        """
+        Return whether this action is complete.
+        :return: True if the action is complete, False otherwise, as boolean.
+        """
+        return self._completed
 
     def execute(self):
         """

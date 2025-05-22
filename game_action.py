@@ -10,9 +10,6 @@ class GameAction(object):
         """
         self._expiry_time=expiry_time
         self._priority=priority
-        # TODO: Consider removing self._completed and using the isComplete() method to check for completion.
-        # Would need to move this member to dummyAction class.
-        self._completed=False
 
     @property
     def expiry_time(self):
@@ -53,7 +50,8 @@ class GameAction(object):
         Return whether this action is complete.
         :return: True if the action is complete, False otherwise, as boolean.
         """
-        return self._completed
+        # At this base class level, we assume that all actions are not complete.
+        return False
 
     def execute(self):
         """
