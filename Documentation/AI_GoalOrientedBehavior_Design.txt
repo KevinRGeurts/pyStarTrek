@@ -8,8 +8,8 @@ List of possible goals for Star Trek AI player:
 			the desired quadrant. If this is the case, then NAV to sector and NAV to quadrant should be
 			constructed as a sequential action.
 	Note: SRS and LRS might also be a sequential action, where we try SRS first, and LRS if SRS does not located a klingon ship.
-	Insistence: Low/zero, when a Klingon ship is located in current sector, or on LRS, or on the galactic record.
-					High when a Klingon ship is not located in current sector, or on LRS, or on the galactic record.
+	Insistence: Low/zero, when a Klingon ship is located in current sector, {?or on LRS, or on the galactic record?}.
+					High when a Klingon ship is not located in current sector, {?or on LRS, or on the galactic record?}.
 	Think this might be a sequential action, where we try SRS, then LRS, then NAV to quadrant.
 (2)	Destroy Klingon ship
 	Actons: TOR, PHA, Nav to sector

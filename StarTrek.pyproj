@@ -50,10 +50,13 @@
     <Compile Include="startrek_actions.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="star_trek_goals.py">
+    <Compile Include="startrek_goals.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="strings.py" />
+    <Compile Include="test_startrek_goals.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="test_action_manager.py">
       <SubType>Code</SubType>
     </Compile>

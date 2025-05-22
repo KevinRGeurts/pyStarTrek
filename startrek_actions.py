@@ -4,7 +4,7 @@
 from math import exp
 from game_action import GameAction
 from game_goal import GameGoal, GoalInsistence
-from star_trek_goals import SurviveGoal, FindKlingonShipGoal
+from startrek_goals import SurviveGoal, FindKlingonShipGoal
 from world_interface import WorldInterface
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.

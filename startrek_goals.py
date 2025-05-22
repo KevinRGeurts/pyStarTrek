@@ -20,7 +20,7 @@ class SurviveGoal(GameGoal):
         Return the insistence value of the Survive goal.
         :return: The insistence of the Survive goal, as int
         """
-        if self._world.shields <= 0 and self._world.quadrant.klingons > 0:
+        if self._world.shield_level <= 0 and self._world.quadrant.klingons > 0:
             return GoalInsistence.URGENT
         else:
             return GoalInsistence.ZERO
@@ -39,13 +39,12 @@ class FindKlingonShipGoal(GameGoal):
 
     def getInsistence(self):
         """
-        Return the insistence value of the Survive goal.
-        :return: The insistence of the Survive goal, as int
+        Return the insistence value of the FindKlingonShip goal.
+        :return: The insistence of the FindKlingonShip goal, as int
         """
-        if self._world.quadrant.klingons > 0:
-            return GoalInsistence.ZERO
-        elif (False):
-            # 
+        if self._world.quadrant.klingons <= 0:
+            return GoalInsistence.HIGH
+        else:
             return GoalInsistence.ZERO
 
 
