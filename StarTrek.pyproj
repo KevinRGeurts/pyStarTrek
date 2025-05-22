@@ -15,7 +15,7 @@
     <UnitTestPattern>test*.py</UnitTestPattern>
     <UnitTestRootDirectory>.</UnitTestRootDirectory>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>/d</CommandLineArguments>
+    <CommandLineArguments>/d /ai</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -66,12 +66,19 @@
     <Compile Include="test_utilities.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="test_world_interface.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="utilities.py" />
+    <Compile Include="world_interface.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Documentation\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Documentation\AI_GoalOrientedBehavior_Design.txt" />
     <Content Include="README.rst" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />

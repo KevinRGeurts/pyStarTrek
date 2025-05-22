@@ -1,0 +1,65 @@
+This file contains design concepts for goal-oriented behavior for the Star Trek game, which we will try first. Might later
+try a blackboard architecture.
+
+List of possible goals for Star Trek AI player:
+(1)	Find Klingon ship
+	Actions: SRS, LRS, NAV to quadrant, NAV to sector
+	Note: Nav may be needed within a quadrant to get out of the way of a star that is blocking navigating to
+			the desired quadrant. If this is the case, then NAV to sector and NAV to quadrant should be
+			constructed as a sequential action.
+	Note: SRS and LRS might also be a sequential action, where we try SRS first, and LRS if SRS does not located a klingon ship.
+	Discontentment: Low/zero, when a Klingon ship is located in current sector, or on LRS, or on the galactic record.
+					High when a Klingon ship is not located in current sector, or on LRS, or on the galactic record.
+(2)	Destroy Klingon ship
+	Actons: TOR, PHA, Nav to sector
+	Note: Nav may be needed within a quadrant to get out of the way of a star that is blocking a torpedo'spath to
+			the klingon ship. (need a function that returns the path). If this is the case, NAV to sector and TOR/PHA
+			should be constructed as a sequential action.
+	Discontentment: Low/zero, when a Klingon ship is destroyed, or when the ship is Dnot in the current quadrant.
+					High when a Klingon ship is in the current quadrant, and not destroyed.
+(3) Repair Damage, by:
+	Discontentment: Low/zero, when the ship is repaired, or when the ship is not damaged.
+					High when the ship is damaged, and not repaired.
+	(3a.1) Find Starbase
+	Actions: SRS, LRS, NAV to quadrant
+	(3a.2) Dock with Starbase, or
+	Actions: NAV to sector
+	(3b.1) Wait for repairs to be completed by Enterprise crew
+	This is do nothing but suffer the consequences of limited ability, while navigating as best as possible.
+(4) Restore energy, by:
+	Discontentment: Low/zero, when the ship is fully energized.
+					Increases continusously as energy reserves are depleted, but probably not linearly.
+					High when energy reserves drop below a value requred to hold shields, fire phasers, navigate.
+	(4a.1) Find Starbase
+	Actions: SRS, LRS, NAV to quadrant
+	(4a.2) Dock with Starbase
+	Actions: NAV to sector
+(5) Restore torpedoes, by:
+	Discontentment: Low/zero, when the ship is fully stocked with torpedoes.
+					Increases continusously as torpedoes are depleted, but probably not linearly.
+					High when torpedoes are gone.
+	(4a.1) Find Starbase
+	Actions: SRS, LRS, NAV to quadrant
+	(4a.2) Dock with Starbase
+	Actions: NAV to sector
+(6) Survive (for example, the action here would be to raise shields)
+	Discontentment: Low/zero, when the ship is not in a quadrant with klingon ships.
+					VERY High (getting shields up takes priority) when the ship is in a quadrant with klingon ships and not docked with a starbase.
+	Actions: Raise shields, or increase shield energy
+	Note: Survival could also encompass repairs and energy restoration...
+(7)	Explore galaxy, that is, build out the galactic record
+	Discontentment: High when all other goals are low, since this is a goal when nothing more pressing is going on.
+					Low when any other goal is not low.			
+	Actions: LRS, NAV to quadrant, NAV to sector
+	Note: May not be needed since finding Klingon ship is a goal, and finding Starvase is a goal, both of which will 
+		lead to exploration of the galaxy.
+
+Numerically values for discontentment:
+	Zero = 0
+	Low = 2
+	High = 4
+	Very High = 8
+
+Another decision making option would be to use a blackboard architecture.
+Experts: Navigation, Combat, Scan, Damage Control, Energy Management
+

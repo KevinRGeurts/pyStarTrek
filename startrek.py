@@ -7,6 +7,7 @@ import sys
 # local imports
 from quadrant import Quadrant
 from utilities import print_strings, compute_direction, distance, input_double
+from action_manager import ActionManager
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 
@@ -55,8 +56,10 @@ def play_ai_game():
     """
     Play the game using AI.
     """
-    act=startrek_actions.NavigateToQuadrantAction(qx=7,qy=7)
-    act.execute()
+    mgr = ActionManager()
+    act=startrek_actions.NavigateToQuadrantAction(expiry_time=10,qx=7,qy=7)
+    mgr.scheduleAction(act)
+    mgr.execute()
 
 
 def print_game_status():

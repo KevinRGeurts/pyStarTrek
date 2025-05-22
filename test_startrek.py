@@ -100,7 +100,8 @@ class Test_test_startrek(unittest.TestCase):
             for i in range(0,8):
                     act_val+=gm.quadrants[j][i].klingons
         exp_val = gm.klingons
-        self.assertEqual(exp_val, act_val)        # Test that total number of Quadrants in list gm.quadrants with starbase=True == gm.starbases
+        self.assertEqual(exp_val, act_val)
+        # Test that total number of Quadrants in list gm.quadrants with starbase=True == gm.starbases
         # Don't understand why this list comprehension doesn't work
         # act_val = len([[q for q in lofq if q.starbase==True] for lofq in gm.quadrants])
         # But do this instead:

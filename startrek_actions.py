@@ -2,6 +2,7 @@
 
 # local imports
 from game_action import GameAction
+from world_interface import WorldInterface
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
@@ -28,19 +29,19 @@ class NavigateToQuadrantAction(GameAction):
         Execute the navigation action.
         :return: None
         """
-        gm=glob_vars.the_game
+        world=WorldInterface()
         # Make sure we aren't trying to navigate to the same quadrant
-        assert(gm.quadrant_x != self.qx or gm.quadrant_y != self.qy)
+        assert(world.quadrant_x != self.qx or world.quadrant_y != self.qy)
         # Placeholder for actual navigation logic
         print(f"Navigating to quadrant ({self.qx+1}, {self.qy+1})")
         # Determine distance to target quadrant
-        dist = startrek.distance(gm.quadrant_x, gm.quadrant_y, self.qx, self.qy)
+        dist = startrek.distance(world.quadrant_x, world.quadrant_y, self.qx, self.qy)
         # Determine direction to target quadrant
-        direction = startrek.compute_direction(gm.quadrant_x, gm.quadrant_y, self.qx, self.qy)
+        direction = startrek.compute_direction(world.quadrant_x, world.quadrant_y, self.qx, self.qy)
         # Perform navigation
         # TODO: Handle hitting an obstacle leaving current quadrant
         output = startrek._navigation(direction, dist)
-        if gm.quadrant_x == self.qx and gm.quadrant_y == self.qy:
+        if world.quadrant_x == self.qx and world.quadrant_y == self.qy:
             # Navigation was successful
             self._completed = True
         startrek.print_strings(output)
