@@ -7,10 +7,11 @@ import sys
 # local imports
 from quadrant import Quadrant
 from utilities import print_strings, compute_direction, distance, input_double
+from gob import Gob
 from action_manager import ActionManager
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
-
+import startrek_goals
 
 class SectorType():
 
@@ -56,10 +57,26 @@ def play_ai_game():
     """
     Play the game using AI.
     """
+    gob = Gob()
+    gob.add_goal(startrek_goals.SurviveGoal())
+    gob.add_goal(startrek_goals.FindKlingonShipGoal())
+    # Note that the following action is problematic, in that at this point we would not know which quadrant
+    # to navigate to.
+    act1=startrek_actions.NavigateToQuadrantAction(expiry_time=10, qx=1, qy=6)
+    gob.add_action(act1)
+    act2=startrek_actions.RaiseShieldsAction(expiry_time=10, priority=10, shield_energy=500)
+    gob.add_action(act2)
+    # Should select the navigate, since we are in no danger yet.
+    bestAct = gob.chooseAction()
     mgr = ActionManager()
-    act=startrek_actions.NavigateToQuadrantAction(expiry_time=10,qx=7,qy=7)
-    mgr.scheduleAction(act)
+    mgr.scheduleAction(bestAct)
     mgr.execute()
+    # Should have brought us to quadrant with Klingon ship.
+    # Should select to raise sheilds
+    bestAct = gob.chooseAction()
+    mgr.scheduleAction(bestAct)
+    mgr.execute()
+    mgr.execute()  # This should raise the shields.
 
 
 def print_game_status():
@@ -550,22 +567,60 @@ def repair_damage():
     return False
 
 
-def long_range_scan():
+def long_range_scan_precheck():
     """
-    Return long range scan display.
-    :return: List of strings to be printed, e.g., using print_strings()
+    Check that long range scan is possible.
+    :return: Tuple (Is it possible to perform long range scan True/False, list of strings to be printed), as tuple (boolean, list of strings)
     """
     game=glob_vars.the_game
-    ret_val=[] # list of strings
+    output=[] # list of strings
+    possible = True
     if game.long_range_scan_damage > 0:
-        ret_val.append("Long range scanner is damaged. Repairs are underway.")
-        ret_val.append("")
+        possible = False
+        output.append("Long range scanner is damaged. Repairs are underway.")
+        output.append("")
+    return (possible, output)
+
+
+def long_range_scan():
+    """
+    Entry point for long range scan display.
+    :return: List of strings to be printed, e.g., using print_strings()
+    """
+    ret_val=[] # list of strings
+    (possible, output) = long_range_scan_precheck()
+    for i in output:
+        ret_val.append(i)
+    if not possible:
         return ret_val
+    scanout = _long_range_scan()
     sb = ""
     ret_val.append("-------------------")
+    for i in range(0,3):
+        for j in range(0,3):
+            sb += "| "
+            sb = sb + scanout[i][j] + " "
+        sb += "|"
+        ret_val.append(sb)
+        sb = ""
+        ret_val.append("-------------------")
+    ret_val.append("")
+    return ret_val
+
+
+def _long_range_scan():
+    """
+    Actually do the long range scan.
+    :return: List of lists of strings, where each string is of the form 'xyz', where x is the number of klingons,
+        y is the number of starbases, and z is the number of stars in the quadrant. Access the return value using
+        ret_val[y-index][x-index], where y-index is the row index and x-index is the column index.
+    """
+    game=glob_vars.the_game
+    ret_val = [[str() for _ in range(3)] for _ in range(3)] # list of lists of strings, i.e., ret_val[y-index][x-index]]
+    ri=0
+    rj=0
     for i in range(game.quadrant_y - 1, game.quadrant_y+2):  # quadrantY + 1 ?
         for j in range(game.quadrant_x - 1, game.quadrant_x+2):  # quadrantX + 1?
-            sb += "| "
             klingon_count = 0
             starbase_count = 0
             star_count = 0
@@ -575,13 +630,10 @@ def long_range_scan():
                 klingon_count = quadrant.klingons
                 starbase_count = 1 if quadrant.starbase else 0
                 star_count = quadrant.stars
-            sb = sb + \
-                "{0}{1}{2} ".format(klingon_count, starbase_count, star_count)
-        sb += "|"
-        ret_val.append(sb)
-        sb = ""
-        ret_val.append("-------------------")
-    ret_val.append("")
+            ret_val[ri][rj] = "{0}{1}{2}".format(klingon_count, starbase_count, star_count)
+            rj += 1
+        rj = 0
+        ri += 1
     return ret_val
 
 

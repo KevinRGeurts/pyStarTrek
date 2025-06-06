@@ -14,12 +14,15 @@ class dummyAction(GameAction):
     """
     This class represents a dummy action used to help test the ActionManager.
     """
-    def __init__(self, expiry_time=0, priority=0):
+    def __init__(self, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
         """
         :parameter expiry_time: The time in an arbitrary count-up from zero until the action expires, as int
         :parameter priority: The priority of the action. Higher numbers indicate higher priority. As int
-        """
-        super().__init__(expiry_time, priority)
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None        """
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
         self._canInterrupt = False
         self._canDoBoth = False
         self._completed=False
@@ -63,5 +66,38 @@ class dummyAction(GameAction):
         """
         assert(isinstance(goal, GameGoal))
         return GoalInsistence.LOW
+
+
+class dummyAction1ofSequence(dummyAction):
+    """
+    This class represents a dummy action used to help test the GameActionSequence class.
+    """
+    def execute(self):
+        """
+        Execute the action. In this case, by writing data to the clipboard, and then setting the
+            completed flag to True.
+        :return: None
+        """
+        if self._write_blackboard is not None:
+            self._write_blackboard("dummy_action_1ofsequence", "dummy_data1")
+        self._completed = True
+        return None
+
+    
+class dummyAction2ofSequence(dummyAction):
+    """
+    This class represents a dummy action used to help test the GameActionSequence class.
+    """
+    def execute(self):
+        """
+        Execute the action. In this case, by reading data from the clipboard, and then setting the
+            completed flag to True.
+        :return: None
+        """
+        if self._read_blackboard is not None and self._write_blackboard is not None:
+            datum = self._read_blackboard("dummy_action_1ofsequence")
+            self._write_blackboard("dummy_action_2ofsequence", datum+'+dummy_data2')
+        self._completed = True
+        return None
 
 

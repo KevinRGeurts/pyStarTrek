@@ -15,7 +15,7 @@
     <UnitTestPattern>test*.py</UnitTestPattern>
     <UnitTestRootDirectory>.</UnitTestRootDirectory>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>/d /ai</CommandLineArguments>
+    <CommandLineArguments>/d</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -28,6 +28,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="action_manager.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="blackboard_datum.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="dummy_actions.py">
@@ -45,6 +48,9 @@
     <Compile Include="game_action.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="gob.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="quadrant.py" />
     <Compile Include="startrek.py" />
     <Compile Include="startrek_actions.py">
@@ -54,6 +60,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="strings.py" />
+    <Compile Include="test_gob.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="test_startrek_goals.py">
       <SubType>Code</SubType>
     </Compile>

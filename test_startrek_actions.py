@@ -1,15 +1,81 @@
 # standard imports
 from gettext import find
+from typing import Sequence
 import unittest
 import random
 
 # local imports
+from game_action import GameActionSequence
 from game_goal import GoalInsistence, GameGoal
 from world_interface import WorldInterface
 from startrek_goals import SurviveGoal, FindKlingonShipGoal
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
+
+
+class Test_LongRangeScanAction(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        self._world = WorldInterface()
+
+    def test_execute(self):
+        seq = GameActionSequence()
+        act = startrek_actions.LongRangeScanAction(expiry_time=3, priority=10,
+                                                   read_blackboard=seq.readFromBlackBoard,
+                                                   write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        # Did we get the expected klingon ship quadrant?
+        exp_val = (1,6)
+        act_val = (seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.KLINGON_QUAD_X),
+                   seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.KLINGON_QUAD_Y))
+        self.assertEqual(exp_val, act_val)
+        # Did we get the expected starbase quadrant?
+        exp_val = (1,7)
+        act_val = (seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_QUAD_X),
+                   seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_QUAD_Y))
+        self.assertEqual(exp_val, act_val)
+
+    def test_execute_long_range_scan_damaged(self):
+        glob_vars.the_game.long_range_scan_damage = 1  # Set the long range scan to be damaged.
+        seq = GameActionSequence()
+        act = startrek_actions.LongRangeScanAction(expiry_time=3, priority=10,
+                                                   read_blackboard=seq.readFromBlackBoard,
+                                                   write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        # Should not find any klingon ship quadrant of starbbase quandrant info on blackboard
+        self.assertIsNone(seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.KLINGON_QUAD_X))
+        self.assertIsNone(seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_QUAD_Y))
+
+    def test_isComplete_True(self):
+        seq = GameActionSequence()
+        act = startrek_actions.LongRangeScanAction(expiry_time=3, priority=10,
+                                                   read_blackboard=seq.readFromBlackBoard,
+                                                   write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        self.assertTrue(act.isComplete())
+
+    def test_isComplete_False(self):
+        act = startrek_actions.LongRangeScanAction()
+        self.assertFalse(act.isComplete())
+
+    def test_getGoalChange(self):
+        act = startrek_actions.LongRangeScanAction()
+        goal = FindKlingonShipGoal()
+        exp_val = -GoalInsistence.HIGH
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+    def test_getGoalChange_others(self):
+        act = startrek_actions.LongRangeScanAction()
+        goal = GameGoal()
+        exp_val = GoalInsistence.ZERO
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
 
 
 class Test_RaiseShieldsAction(unittest.TestCase):

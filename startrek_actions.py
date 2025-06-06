@@ -1,4 +1,5 @@
 # standard imports
+from enum import StrEnum
 
 # local imports
 from math import exp
@@ -9,31 +10,142 @@ from world_interface import WorldInterface
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
+
+class BlackboardDatumType(StrEnum):
+    """
+    Enumeration of the types of data that can be written to the blackboard in a Star Trek game.
+    """
+    KLINGON_QUAD_X = 'klingon_quad_x'
+    KLINGON_QUAD_Y = 'klingon_quad_y'
+    BASE_QUAD_X = 'base_quad_x'
+    BASE_QUAD_Y = 'base_quad_y'
+
+
 class StarTrekAction(GameAction):
     """
     Base class for all Star Trek game actions. Provides access to WorldInterface.
     """
-    def __init__(self, expiry_time=0, priority=0):
+    def __init__(self, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
         """
         :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
         :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
         """
-        super().__init__(expiry_time, priority)
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
         self._world = WorldInterface()
+
+
+class LongRangeScanAction(StarTrekAction):
+    """
+    Represents an action in a Star Trek game where a player performs a long-range scan of the surrounding
+    quadrants, with intent to find a Klingon Ship or a Starbase.
+    """
+    def __init__(self, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+        """
+        :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
+        :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
+        """
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
+        self._is_complete = False
+    
+    def execute(self):
+        """
+        Execute the long range scan action.
+        :return: None
+        """
+        # Check if long range scanner is damaged.
+        (possible, output) = startrek.long_range_scan_precheck()
+        if not possible:
+            # Long range scanner is damaged, and cannot be used
+            startrek.print_strings(output)
+            return
+        # Perform the long range scan
+        scan_output = startrek._long_range_scan()
+        # Find the first quadrant, if any, in the scan, that has a klingon ship.
+        quad_x = self._world.quadrant_x
+        quad_y = self._world.quadrant_y
+        klingon_quad_x = -1
+        klingon_quad_y = -1
+        try:
+            for i in range(3):
+                for j in range(3):
+                    if int(scan_output[i][j][0]) > 0:
+                        klingon_quad_x = quad_x + j - 1
+                        klingon_quad_y = quad_y + i - 1
+                        raise StopIteration  # Break out of both loops when the first klingon ship is found
+        except StopIteration:
+            pass
+        # If a klingon ship was found, write coordinates to blackboard, if we have one
+        if klingon_quad_x >= 0 and klingon_quad_y >= 0:
+            if self._write_blackboard is not None:
+                self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_X, klingon_quad_x)
+                self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_Y, klingon_quad_y)
+        
+        # Find the first quadrant, if any, in the scan, that has a starbase.
+        base_quad_x = -1
+        base_quad_y = -1
+        try:
+            for i in range(3):
+                for j in range(3):
+                    if int(scan_output[i][j][1]) > 0:
+                        base_quad_x = quad_x + j - 1
+                        base_quad_y = quad_y + i - 1
+                        raise StopIteration  # Break out of both loops when the first klingon ship is found
+        except StopIteration:
+            pass
+        # If a klingon ship was found, write coordinates to blackboard, if we have one
+        if base_quad_x >= 0 and base_quad_y >= 0:
+            if self._write_blackboard is not None:
+                self._write_blackboard(BlackboardDatumType.BASE_QUAD_X, base_quad_x)
+                self._write_blackboard(BlackboardDatumType.BASE_QUAD_Y, base_quad_y)
+        self._is_complete = True  # Mark the action as complete after the scan is executed, regardless of results.
+        return
+
+    def isComplete(self):
+        """
+        Return whether this action is complete.
+        :return: True if the action is complete, False otherwise, as boolean.
+        """
+        return self._is_complete
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with completing the long range scan.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with completing the long range scan, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        if isinstance(goal, FindKlingonShipGoal):
+            # Not to be taken literally, but simply to indicated that completing this action will lower
+            # the insistence of the FindKlingonShipGoal.
+            return -GoalInsistence.HIGH
+        else:
+            return GoalInsistence.ZERO
 
 
 class RaiseShieldsAction(StarTrekAction):
     """
     Represents an action in a Star Trek game where a player raises the shields.
     """
-    def __init__(self, shield_energy=0, expiry_time=0, priority=0):
+    def __init__(self, shield_energy=0, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
         """
         Initialize the RaiseShieldsAction object.
-        :param shiled_energy: The desired energy level for the shields, as int.
+        :param shield_energy: The desired energy level for the shields, as int.
         :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
         :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
         """
-        super().__init__(expiry_time=expiry_time, priority=priority)
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
         assert(shield_energy >= 0)
         self._shield_energy = shield_energy
 
@@ -110,14 +222,18 @@ class NavigateToQuadrantAction(StarTrekAction):
     """
     Represents an action in a Star Trek game where a player navigates to a specific quadrant.
     """
-    def __init__(self, qx=1, qy=1, expiry_time=0, priority=0):
+    def __init__(self, qx=1, qy=1, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
         """
         :param qx: The quadrant x-coordinate [0..7] to navigate to, as int.
         :param qy: The quadrant y-coordinate [0..7] to navigate to, as int.
         :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
         :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
         """
-        super().__init__(expiry_time, priority)
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
         assert(qx>=0 and qx<=7)
         self.qx = qx
         assert(qy>=0 and qy<=7)

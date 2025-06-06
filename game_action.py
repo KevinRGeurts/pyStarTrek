@@ -6,13 +6,23 @@ class GameAction(object):
     This class represents a game action that can be performed by a player.
     """
 
-    def __init__(self, expiry_time=0, priority=0):
+    def __init__(self, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
         """
         :parameter expiry_time: The time in an arbitrary count-up from zero until the action expires, as int
         :parameter priority: The priority of the action. Higher numbers indicate higher priority. As int
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
         """
         self._expiry_time=expiry_time
         self._priority=priority
+        if read_blackboard:
+            assert(callable(read_blackboard))
+            self._read_blackboard = read_blackboard
+        if write_blackboard:
+            assert(callable(write_blackboard))
+            self._write_blackboard = write_blackboard
 
     @property
     def expiry_time(self):
@@ -159,8 +169,24 @@ class GameActionSequence(GameAction):
         for act in seq_acts:
             assert(isinstance(act, GameAction))
             self._action_list.append(act)
-        self._activeIndex=0 # The index of the currently active (executing) action in the sequence
+        if len(self._action_list) >= 0:
+            self._activeIndex=0 # The index of the currently active (executing) action in the sequence
+        else:
+            self._activeIndex=-1
+        self._blackboard={} # A dictionary used to pass information between actions in the sequence
 
+    def addAction(self, action):
+        """
+        Add an action to the sequence.
+        :param action: The GameAction object to add to the sequence.
+        :return: None
+        """
+        assert(isinstance(action, GameAction))
+        self._action_list.append(action)
+        # If we are adding the first action to the sequence, set the active index to 0
+        if self._activeIndex < 0:
+            self._activeIndex = 0
+        
     def canInterrupt(self):
         """
         Return whether this sequence of actions can be interrupted by another action.
@@ -195,6 +221,10 @@ class GameActionSequence(GameAction):
         Execute subactions in the sequence one at a time and in order.
         :return: None
         """
+        # If there are no actions in the sequence, do nothing
+        if self._activeIndex < 0:
+            return
+        
         # Execute the current action in the sequence
         self._action_list[self._activeIndex].execute()
 
@@ -214,3 +244,20 @@ class GameActionSequence(GameAction):
         for act in self._action_list:
             total += act.getGoalChange(goal)
         return -total
+
+    def writeToBlackBoard(self, key, value):
+        """
+        Write a value to the blackboard for this sequence.
+        :param key: The key to write the value under, as str.
+        :param value: The value to write, as any type.
+        :return: None
+        """
+        self._blackboard[key] = value
+
+    def readFromBlackBoard(self, key):
+        """
+        Read a value from the blackboard for this sequence.
+        :param key: The key to read the value from, as str.
+        :return: The value associated with the key, or None if the key does not exist.
+        """
+        return self._blackboard.get(key, None)

@@ -1,12 +1,21 @@
 # standard imports
+from importlib.resources import read_binary
 import unittest
 
 # local imports
 from game_action import GameAction, GameActionCombination, GameActionSequence
 from game_goal import GameGoal, GoalInsistence
-from dummy_actions import dummyAction
+from dummy_actions import dummyAction, dummyAction1ofSequence, dummyAction2ofSequence
 
 class Test_GameAction(unittest.TestCase):
+    def test_init_read_blackboard_fail(self):
+        reader = float(1.0)  # Invalid type
+        self.assertRaises(AssertionError, GameAction, read_blackboard=reader)
+
+    def test_init_write_blackboard_fail(self):
+        writer = float(1.0)  # Invalid type
+        self.assertRaises(AssertionError, GameAction, write_blackboard=writer)
+    
     def test_expiry_time_get(self):
         act = GameAction(expiry_time=10)
         exp_val=10
@@ -226,6 +235,40 @@ class Test_GameActionSequence(unittest.TestCase):
         act_val=combo.getGoalChange(goal)
         self.assertEqual(act_val, exp_val)
 
+    def test_addAction(self):
+        act1=dummyAction()
+        act2=dummyAction()
+        seq = GameActionSequence([act1])
+        seq.addAction(act2)
+        self.assertIn(act2, seq._action_list)
+        self.assertEqual(len(seq._action_list), 2)
+
+    def test_addAction_fail(self):
+        act2=float(1.0) # Invalid type
+        seq = GameActionSequence()
+        self.assertRaises(AssertionError, seq.addAction, act2)
+
+    def test_blackboard_read_write(self):
+        seq = GameActionSequence()
+        exp_val = 'test_value'
+        seq.writeToBlackBoard('test_key', exp_val)
+        act_val = seq.readFromBlackBoard('test_key')
+        self.assertEqual(act_val, exp_val)
+
+    def test_sequence_with_blackboard_useage(self):
+        seq = GameActionSequence()
+        act1 = dummyAction1ofSequence(read_blackboard=seq.readFromBlackBoard,
+                                      write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act1)
+        act2 = dummyAction2ofSequence(read_blackboard=seq.readFromBlackBoard,
+                                      write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act2)
+        seq.execute()
+        seq.execute()
+        exp_val='dummy_data1+dummy_data2'
+        act_val = seq.readFromBlackBoard('dummy_action_2ofsequence')
+        self.assertEqual(act_val, exp_val)
+ 
 
 if __name__ == '__main__':
     unittest.main()
