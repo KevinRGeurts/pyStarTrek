@@ -8,10 +8,68 @@ import random
 from game_action import GameActionSequence
 from game_goal import GoalInsistence, GameGoal
 from world_interface import WorldInterface
-from startrek_goals import SurviveGoal, FindKlingonShipGoal
+from startrek_goals import DestroyKlingonShipGoal, SurviveGoal, FindKlingonShipGoal
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
+
+
+class LaunchPhotonTorpedoAction(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        startrek.generate_sector()
+        self._world = WorldInterface()
+    
+    def test_execute_no_klingon_ship(self):
+        act = startrek_actions.LaunchPhotonTorpedoAction(expiry_time=3, priority=10)
+        act.execute()
+        self.assertFalse(act.isComplete())
+
+    def test_execute_no_torpedos(self):
+        glob_vars.the_game.photon_torpedoes = 0
+        # Navigate to quadrant with klingon ship
+        nav_action = startrek_actions.FindKlingonShipAction()
+        while not nav_action.isComplete(): 
+            nav_action.execute()
+        # Attempt torpedo launch
+        launch = startrek_actions.LaunchPhotonTorpedoAction(expiry_time=3, priority=10)
+        launch.execute()
+        self.assertFalse(launch.isComplete())
+
+    def test_execute_torpedo_control_damaged(self):
+        glob_vars.the_game.photon_damage = 5
+        # Navigate to quadrant with klingon ship
+        nav_action = startrek_actions.FindKlingonShipAction()
+        while not nav_action.isComplete(): 
+            nav_action.execute()
+        # Attempt torpedo launch
+        launch = startrek_actions.LaunchPhotonTorpedoAction(expiry_time=3, priority=10)
+        launch.execute()
+        self.assertFalse(launch.isComplete())
+
+    def test_execute(self):
+        # Navigate to quadrant with klingon ship
+        nav_action = startrek_actions.FindKlingonShipAction()
+        while not nav_action.isComplete(): 
+            nav_action.execute()
+        launch = startrek_actions.LaunchPhotonTorpedoAction(expiry_time=3, priority=10)
+        launch.execute()
+        self.assertTrue(launch.isComplete())
+
+    def test_getGoalChange(self):
+        act = startrek_actions.LaunchPhotonTorpedoAction()
+        goal = DestroyKlingonShipGoal()
+        exp_val = -GoalInsistence.HIGH
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+    def test_getGoalChange_others(self):
+        act = startrek_actions.LaunchPhotonTorpedoAction()
+        goal = GameGoal()
+        exp_val = GoalInsistence.ZERO
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
 
 
 class Test_FindKlingonShipAction(unittest.TestCase):

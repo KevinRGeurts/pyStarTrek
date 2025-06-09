@@ -61,16 +61,19 @@ def play_ai_game():
     # Create the goals for the Star Trek game.
     gob.add_goal(startrek_goals.SurviveGoal())
     gob.add_goal(startrek_goals.FindKlingonShipGoal())
+    gob.add_goal(startrek_goals.DestroyKlingonShipGoal())
     # Create the possible actions for the Star Trek game.
     act1=startrek_actions.FindKlingonShipAction(expiry_time=10, priority=10)
     gob.add_action(act1)
     act2=startrek_actions.RaiseShieldsAction(expiry_time=10, priority=10, shield_energy=500)
     gob.add_action(act2)
+    act3=startrek_actions.LaunchPhotonTorpedoAction(expiry_time=10, priority=10)
+    gob.add_action(act3)
     
     mgr = ActionManager()
     
     num_acts = 0
-    while num_acts < 2: # TTD: Change to while not game over
+    while num_acts < 3: # TTD: Change to while not game over
     
         # Choose the best action to execute.
         bestAct = gob.chooseAction()

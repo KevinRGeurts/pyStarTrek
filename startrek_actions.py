@@ -5,7 +5,7 @@ from enum import StrEnum
 from math import exp
 from game_action import GameAction, GameActionSequence
 from game_goal import GameGoal, GoalInsistence
-from startrek_goals import SurviveGoal, FindKlingonShipGoal
+from startrek_goals import DestroyKlingonShipGoal, SurviveGoal, FindKlingonShipGoal
 from world_interface import WorldInterface
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
@@ -317,4 +317,66 @@ class NavigateToQuadrantAction(StarTrekAction):
         else:
             return GoalInsistence.ZERO
         
+# TODO: Could consider breaking this apart into two actions. The first action would determine the direction.
+# The second action would fire in that direction. And the two would be combined into a sequence to
+# operationalize.
+class LaunchPhotonTorpedoAction(StarTrekAction):
+    """
+    Represents an action in a Star Trek game where a player launches a photon torpedo.
+    """
+    def __init__(self, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+        """
+        Initialize the LaunchPhotonTorpedoAction object.
+        :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
+        :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
+        """
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
+        self._is_complete = False
 
+    def execute(self):
+        """
+        Execute the launch photon torpedo action.
+        :return: None
+        """
+        
+        # Check if torpedo control is damaged or if we are out of torpedoes.
+        (possible, output) = startrek._torpedo_control_precheck()
+        if not possible:
+            # Torpedo control is damaged, or we are out of torpedoes, and cannot launch a photon torpedo
+            startrek.print_strings(output)
+            return
+        # Determine firing direction for torpedo
+        target = self._world.klingon_ships[0]
+        direction = startrek.compute_direction(self._world.sector_x, self._world.sector_y,
+                                               target.sector_x, target.sector_y)
+        print(f"LaunchPhotonTorpedoAction Launching photon torpedo at Klingon ship in sector ({target.sector_x+1},{target.sector_y+1}).")
+        # Fire the torpedo
+        output = startrek._torpedo_control_launch(direction)
+        startrek.print_strings(output)
+        self._is_complete = True
+        return None
+
+    def isComplete(self):
+        """
+        Return whether this action is complete.
+        :return: True if the action is complete, False otherwise, as boolean.
+        """
+        return self._is_complete
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with launching a photon torpedo.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with navigating to the target quadrant, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        if isinstance(goal, DestroyKlingonShipGoal):
+            # Not to be taken literally, but simply to indicated that completing this action
+            # to lauch a photon torpedo will lower the insistence of the DestoryKlingonShipGoal.
+            return -GoalInsistence.HIGH
+        else:
+            return GoalInsistence.ZERO
