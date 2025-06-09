@@ -58,25 +58,29 @@ def play_ai_game():
     Play the game using AI.
     """
     gob = Gob()
+    # Create the goals for the Star Trek game.
     gob.add_goal(startrek_goals.SurviveGoal())
     gob.add_goal(startrek_goals.FindKlingonShipGoal())
-    # Note that the following action is problematic, in that at this point we would not know which quadrant
-    # to navigate to.
-    act1=startrek_actions.NavigateToQuadrantAction(expiry_time=10, qx=1, qy=6)
+    # Create the possible actions for the Star Trek game.
+    act1=startrek_actions.FindKlingonShipAction(expiry_time=10, priority=10)
     gob.add_action(act1)
     act2=startrek_actions.RaiseShieldsAction(expiry_time=10, priority=10, shield_energy=500)
     gob.add_action(act2)
-    # Should select the navigate, since we are in no danger yet.
-    bestAct = gob.chooseAction()
+    
     mgr = ActionManager()
-    mgr.scheduleAction(bestAct)
-    mgr.execute()
-    # Should have brought us to quadrant with Klingon ship.
-    # Should select to raise sheilds
-    bestAct = gob.chooseAction()
-    mgr.scheduleAction(bestAct)
-    mgr.execute()
-    mgr.execute()  # This should raise the shields.
+    
+    num_acts = 0
+    while num_acts < 2: # TTD: Change to while not game over
+    
+        # Choose the best action to execute.
+        bestAct = gob.chooseAction()
+        mgr.scheduleAction(bestAct)
+        # Continue to execute the action manager until it is empty.
+        # In this context, one action, combination, or sequence should have completely executed.
+        while len(mgr) > 0:
+            mgr.execute()
+        num_acts += 1
+
 
 
 def print_game_status():

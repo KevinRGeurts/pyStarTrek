@@ -19,6 +19,13 @@ class ActionManager(object):
         # The current time, a simple counter
         self._currentTime = 0
 
+    def __len__(self):
+        """
+        Return the number of pending plus active actions.
+        :return: The number of pending plus active actions, as int.
+        """
+        return len(self._action_list) + len(self._active)
+
     def scheduleAction(self, action=None):
         """
         Add an action to be executed to the list.

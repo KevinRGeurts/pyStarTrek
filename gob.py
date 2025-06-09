@@ -1,4 +1,5 @@
 # standard imports
+from copy import deepcopy
 
 # local imports
 from game_goal import GameGoal
@@ -66,6 +67,8 @@ class Gob(object):
         """
         Choose the best action based on the current goals and actions.
         :return: The chosen action, as an instance of GameAction, or None if no action is chosen.
+            Note that the action returned will be a deep copy of the original action. That is, 
+            self._actions is treated as a list of prototypes.
         """
         # Find the goal to try and fulfill
         topGoal = self._goals[0]
@@ -84,6 +87,6 @@ class Gob(object):
                 bestAction = action
                 bestUtility = utility
 
-        return bestAction
+        return deepcopy(bestAction)
 
 

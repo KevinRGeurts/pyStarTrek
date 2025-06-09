@@ -135,6 +135,16 @@ class Test_action_manager(unittest.TestCase):
         self.assertTrue(action2 in am._active)
         self.assertTrue(action1 in am._active)
 
+    def test_len_(self):
+        am = ActionManager()
+        action1 = dummyAction(expiry_time=10, priority=1)
+        am.scheduleAction(action1)
+        action2 = dummyAction(expiry_time=10, priority=2)
+        am.scheduleAction(action2)
+        exp_val = 2
+        act_val = len(am)
+        self.assertEqual(exp_val, act_val)
+
 
 if __name__ == '__main__':
     unittest.main()

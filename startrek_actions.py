@@ -3,7 +3,7 @@ from enum import StrEnum
 
 # local imports
 from math import exp
-from game_action import GameAction
+from game_action import GameAction, GameActionSequence
 from game_goal import GameGoal, GoalInsistence
 from startrek_goals import SurviveGoal, FindKlingonShipGoal
 from world_interface import WorldInterface
@@ -36,6 +36,21 @@ class StarTrekAction(GameAction):
         """
         super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
         self._world = WorldInterface()
+
+
+class FindKlingonShipAction(GameActionSequence):
+    """
+    Represents a sequence of actions in a Star Trek game where a player scans to find a quadrant with a Klingon ship
+    and then navigates to that quadrant.
+    :param expiry_time: The time in an arbitrary count-up from zero until the action sequence expires, as int.
+    :param priority: The priority of the action sequence. Higher numbers indicate higher priority. As int.
+    """
+    def __init__(self, expiry_time=0, priority=0):
+        scan_act = LongRangeScanAction(read_blackboard=self.readFromBlackBoard,
+                                       write_blackboard=self.writeToBlackBoard)
+        nav_act = NavigateToQuadrantAction(read_blackboard=self.readFromBlackBoard,
+                                           write_blackboard=self.writeToBlackBoard)
+        super().__init__(expiry_time, priority, seq_acts=[scan_act, nav_act])
 
 
 class LongRangeScanAction(StarTrekAction):
@@ -85,6 +100,7 @@ class LongRangeScanAction(StarTrekAction):
         # If a klingon ship was found, write coordinates to blackboard, if we have one
         if klingon_quad_x >= 0 and klingon_quad_y >= 0:
             if self._write_blackboard is not None:
+                print(f"LongRangeScan Action found Klingon ship at quadrant ({klingon_quad_x+1}, {klingon_quad_y+1}).")
                 self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_X, klingon_quad_x)
                 self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_Y, klingon_quad_y)
         
@@ -100,8 +116,9 @@ class LongRangeScanAction(StarTrekAction):
                         raise StopIteration  # Break out of both loops when the first klingon ship is found
         except StopIteration:
             pass
-        # If a klingon ship was found, write coordinates to blackboard, if we have one
+        # If a starbase was found, write coordinates to blackboard, if we have one
         if base_quad_x >= 0 and base_quad_y >= 0:
+            print(f"LongRangeScan Action found starbase at quadrant ({base_quad_x+1}, {base_quad_y+1}).")
             if self._write_blackboard is not None:
                 self._write_blackboard(BlackboardDatumType.BASE_QUAD_X, base_quad_x)
                 self._write_blackboard(BlackboardDatumType.BASE_QUAD_Y, base_quad_y)
@@ -154,6 +171,7 @@ class RaiseShieldsAction(StarTrekAction):
         Execute the raise shields action.
         :return: None
         """
+        print(f"RaiseShieldsAction attempting to set shield energy to {self._shield_energy}.")
         # Check if shield controls are damaged.
         (possible, output) = startrek._shield_controls_precheck()
         if not possible:
@@ -222,7 +240,7 @@ class NavigateToQuadrantAction(StarTrekAction):
     """
     Represents an action in a Star Trek game where a player navigates to a specific quadrant.
     """
-    def __init__(self, qx=1, qy=1, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+    def __init__(self, qx=None, qy=None, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
         """
         :param qx: The quadrant x-coordinate [0..7] to navigate to, as int.
         :param qy: The quadrant y-coordinate [0..7] to navigate to, as int.
@@ -234,9 +252,9 @@ class NavigateToQuadrantAction(StarTrekAction):
             Signature: write_blackboard(key: str, value: any) -> None
         """
         super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
-        assert(qx>=0 and qx<=7)
+        if qx is not None: assert(qx>=0 and qx<=7)
         self.qx = qx
-        assert(qy>=0 and qy<=7)
+        if qy is not None: assert(qy>=0 and qy<=7)
         self.qy = qy
 
     def isComplete(self):
@@ -257,10 +275,23 @@ class NavigateToQuadrantAction(StarTrekAction):
         Execute the navigation action.
         :return: None
         """
+        # If we don't have target quadrant coordinates, then we need to read them from the blackboard.
+        if self.qx is None:
+            assert(self._read_blackboard is not None)
+            self.qx = self._read_blackboard(BlackboardDatumType.KLINGON_QUAD_X)
+        if self.qy is None:
+            assert(self._read_blackboard is not None)
+            self.qy = self._read_blackboard(BlackboardDatumType.KLINGON_QUAD_Y)
+        if self.qx is None or self.qy is None:
+            # We don't have target quadrant coordinates, so we cannot navigate
+            startrek.print_strings(["Cannot navigate to quadrant: target coordinates not specified."])
+            return
+
         # Make sure we aren't trying to navigate to the same quadrant
         assert(self._world.quadrant_x != self.qx or self._world.quadrant_y != self.qy)
-        # Placeholder for actual navigation logic
-        print(f"Navigating to quadrant ({self.qx+1}, {self.qy+1})")
+
+        # Navigate to target quadrant
+        print(f"NavigateToQuadrantAction Navigating to quadrant ({self.qx+1}, {self.qy+1}).")
         # Determine distance to target quadrant
         dist = startrek.distance(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
         # Determine direction to target quadrant
@@ -269,6 +300,8 @@ class NavigateToQuadrantAction(StarTrekAction):
         # TODO: Handle hitting an obstacle leaving current quadrant
         output = startrek._navigation(direction, dist)
         startrek.print_strings(output)
+
+        return None
 
     def getGoalChange(self, goal=None):
         """

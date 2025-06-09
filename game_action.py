@@ -153,18 +153,20 @@ class GameActionCombination(GameAction):
         total = 0
         for act in self._action_list:
             total += act.getGoalChange(goal)
-        return -total
+        return total
 
 
 class GameActionSequence(GameAction):
     """
     This class represents a sequence of game actions that must be performed in order.
     """
-    def __init__(self, seq_acts=[]):
+    def __init__(self, expiry_time=0, priority=0, seq_acts=[]):
         """
+        :parameter expiry_time: The time in an arbitrary count-up from zero until the action expires, as int
+        :parameter priority: The priority of the action. Higher numbers indicate higher priority. As int
         :parameter seq_acts: A list of GameAction objects that make up the ordered sequence.
         """
-        super().__init__()
+        super().__init__(expiry_time, priority)
         self._action_list = [] # List of GameActions in the sequence
         for act in seq_acts:
             assert(isinstance(act, GameAction))
@@ -243,7 +245,7 @@ class GameActionSequence(GameAction):
         total = 0
         for act in self._action_list:
             total += act.getGoalChange(goal)
-        return -total
+        return total
 
     def writeToBlackBoard(self, key, value):
         """

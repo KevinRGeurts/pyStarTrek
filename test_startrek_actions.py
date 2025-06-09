@@ -14,6 +14,23 @@ import startrek # Leave this import like this exactly, so that a circle import i
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
 
+class Test_FindKlingonShipAction(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        startrek.generate_sector()
+        self._world = WorldInterface()
+
+    def test_execute(self):
+        seq=startrek_actions.FindKlingonShipAction(expiry_time=3, priority=10)
+        seq.execute() # Execute long range scan to find the klingon ship quadrant.
+        seq.execute() # Execute the action to navigate to the klingon ship quadrant.
+        # Have we arrived at quadrant (1,6) where the klingon ship is located?
+        exp_val = (1, 6)
+        act_val = (self._world.quadrant_x, self._world.quadrant_y)
+        self.assertTupleEqual(exp_val, act_val)
+        self.assertTrue(seq.isComplete())
+
 class Test_LongRangeScanAction(unittest.TestCase):
     def setUp(self):
         random.seed(1234567890)
@@ -31,12 +48,12 @@ class Test_LongRangeScanAction(unittest.TestCase):
         exp_val = (1,6)
         act_val = (seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.KLINGON_QUAD_X),
                    seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.KLINGON_QUAD_Y))
-        self.assertEqual(exp_val, act_val)
+        self.assertTupleEqual(exp_val, act_val)
         # Did we get the expected starbase quadrant?
         exp_val = (1,7)
         act_val = (seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_QUAD_X),
                    seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_QUAD_Y))
-        self.assertEqual(exp_val, act_val)
+        self.assertTupleEqual(exp_val, act_val)
 
     def test_execute_long_range_scan_damaged(self):
         glob_vars.the_game.long_range_scan_damage = 1  # Set the long range scan to be damaged.

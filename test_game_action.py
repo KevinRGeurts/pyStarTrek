@@ -142,7 +142,7 @@ class Test_GameActionCombination(unittest.TestCase):
         act2=dummyAction()
         combo = GameActionCombination([act1, act2])
         goal = GameGoal("Test Goal")
-        exp_val= -(act1.getGoalChange(goal) + act2.getGoalChange(goal))
+        exp_val= (act1.getGoalChange(goal) + act2.getGoalChange(goal))
         act_val=combo.getGoalChange(goal)
         self.assertEqual(act_val, exp_val)
 
@@ -154,7 +154,7 @@ class Test_GameActionSequence(unittest.TestCase):
         act2=dummyAction()
         act3=dummyAction()
         act3._canInterrupt=True
-        seq = GameActionSequence([act1, act2, act3])
+        seq = GameActionSequence(seq_acts=[act1, act2, act3])
         # Advance the sequence to the 2nd action
         seq.execute()
         self.assertFalse(seq.canInterrupt())
@@ -166,7 +166,7 @@ class Test_GameActionSequence(unittest.TestCase):
         act2._canInterrupt=True
         act3=dummyAction()
         act3._canInterrupt=False
-        seq = GameActionSequence([act1, act2, act3])
+        seq = GameActionSequence(seq_acts=[act1, act2, act3])
         # Advance the sequence to the 2nd action
         seq.execute()
         self.assertTrue(seq.canInterrupt())
@@ -178,7 +178,7 @@ class Test_GameActionSequence(unittest.TestCase):
         act2._canDoBoth=True
         act3=dummyAction()
         act3._canDoBoth=False
-        seq = GameActionSequence([act1, act2, act3])
+        seq = GameActionSequence(seq_acts=[act1, act2, act3])
         # Advance the sequence to the 2nd action
         seq.execute()
         other_act=dummyAction()
@@ -191,7 +191,7 @@ class Test_GameActionSequence(unittest.TestCase):
         act2._canDoBoth=True
         act3=dummyAction()
         act3._canDoBoth=True
-        seq = GameActionSequence([act1, act2, act3])
+        seq = GameActionSequence(seq_acts=[act1, act2, act3])
         # Advance the sequence to the 2nd action
         seq.execute()
         other_act=dummyAction()
@@ -205,7 +205,7 @@ class Test_GameActionSequence(unittest.TestCase):
     def test_isComplete_no(self):
         act1=dummyAction()
         act2=dummyAction()
-        seq = GameActionSequence([act1, act2])
+        seq = GameActionSequence(seq_acts=[act1, act2])
         # Executing the sequence should exeucte and complete the first action, but not the second
         seq.execute()
         self.assertFalse(seq.isComplete())
@@ -213,7 +213,7 @@ class Test_GameActionSequence(unittest.TestCase):
     def test_isComplete_yes_and_execute(self):
         act1=dummyAction()
         act2=dummyAction()
-        seq = GameActionSequence([act1, act2])
+        seq = GameActionSequence(seq_acts=[act1, act2])
         # Executing the sequence twice should exeucte and complete both actions
         seq.execute()
         seq.execute()
@@ -222,23 +222,23 @@ class Test_GameActionSequence(unittest.TestCase):
     def test_getGoalChange_fail(self):
         act1=dummyAction()
         act2=dummyAction()
-        combo = GameActionSequence([act1, act2])
+        combo = GameActionSequence(seq_acts=[act1, act2])
         goal=float(1.0)  # Invalid type
         self.assertRaises(AssertionError, combo.getGoalChange, goal)
 
     def test_getGoalChange(self):
         act1=dummyAction()
         act2=dummyAction()
-        combo = GameActionSequence([act1, act2])
+        combo = GameActionSequence(seq_acts=[act1, act2])
         goal = GameGoal("Test Goal")
-        exp_val= -(act1.getGoalChange(goal) + act2.getGoalChange(goal))
+        exp_val= (act1.getGoalChange(goal) + act2.getGoalChange(goal))
         act_val=combo.getGoalChange(goal)
         self.assertEqual(act_val, exp_val)
 
     def test_addAction(self):
         act1=dummyAction()
         act2=dummyAction()
-        seq = GameActionSequence([act1])
+        seq = GameActionSequence(seq_acts=[act1])
         seq.addAction(act2)
         self.assertIn(act2, seq._action_list)
         self.assertEqual(len(seq._action_list), 2)
