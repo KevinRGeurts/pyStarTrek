@@ -22,6 +22,13 @@ class Test_GameAction(unittest.TestCase):
         act_val=act.expiry_time
         self.assertEqual(act_val, exp_val)
 
+    def test_expiry_time_set(self):
+        act = GameAction()
+        exp_val = 10
+        act.expiry_time = exp_val
+        act_val = act.expiry_time
+        self.assertEqual(act_val, exp_val)
+
     def test_priority_get(self):
         act = GameAction(priority=10)
         exp_val=10

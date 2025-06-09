@@ -32,6 +32,14 @@ class GameAction(object):
         """
         return self._expiry_time
 
+    @expiry_time.setter
+    def expiry_time(self, expire_at):
+        """
+        Set the expiration time of the action.
+        :parameter expire_at: The time in an arbitrary count-up from zero until the action expires, as int.
+        """
+        self._expiry_time = expire_at
+
     @property
     def priority(self):
         """

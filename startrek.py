@@ -73,10 +73,11 @@ def play_ai_game():
     mgr = ActionManager()
     
     num_acts = 0
-    while num_acts < 3: # TTD: Change to while not game over
+    while num_acts < 100: # TTD: Change to while not game over
     
         # Choose the best action to execute.
         bestAct = gob.chooseAction()
+        bestAct.expiry_time = mgr.currentTime + 10  # Set the expiry time for the action.
         mgr.scheduleAction(bestAct)
         # Continue to execute the action manager until it is empty.
         # In this context, one action, combination, or sequence should have completely executed.
@@ -710,6 +711,8 @@ def _torpedo_control_launch(direction):
     Actually launch the torpedo.
     :parameter direction: Direction in which to fire the torpedo, float
     :return: List of strings to be printed, e.g., using print_strings()
+    Note: It is possible for torpedo to miss, even if it is fired in the direction of a Klingon ship,
+            because there is a 1-in-3 chance of the torpedo being fired off-course by a random small amount.
     """
     game=glob_vars.the_game
     ret_val=[] # list of strings

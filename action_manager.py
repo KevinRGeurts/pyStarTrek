@@ -19,6 +19,14 @@ class ActionManager(object):
         # The current time, a simple counter
         self._currentTime = 0
 
+    @property
+    def currentTime(self):
+        """
+        Return the current time.
+        :return: The current time, as int.
+        """
+        return self._currentTime
+
     def __len__(self):
         """
         Return the number of pending plus active actions.

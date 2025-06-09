@@ -35,7 +35,7 @@ class Test_action_manager(unittest.TestCase):
         act_val = am.getHighestPriorityActive()
         self.assertEqual(exp_val, act_val)
 
-    def test_execute_one_action(self):
+    def test_execute_one_action_and_current_time(self):
         am = ActionManager()
         action = dummyAction(expiry_time=2, priority=1)
         am.scheduleAction(action)
@@ -48,6 +48,10 @@ class Test_action_manager(unittest.TestCase):
         # If we execute again, the action should be removed from the active list.
         am.execute()
         self.assertTrue(len(am._active) == 0)
+        # Test the current time
+        exp_val = 2
+        act_val = am.currentTime
+        self.assertEqual(exp_val, act_val)
 
     def test_execute_second_action_too_low_priority(self):
         am = ActionManager()
