@@ -5,6 +5,7 @@ import unittest
 from action_manager import ActionManager
 from game_action import GameAction
 from dummy_actions import dummyAction
+from exceptions import ExcessiveRepeatActionScheduleError
 
 
 class Test_action_manager(unittest.TestCase):
@@ -19,6 +20,15 @@ class Test_action_manager(unittest.TestCase):
         am = ActionManager()
         not_action = float(1.0)
         self.assertRaises(AssertionError, am.scheduleAction, not_action)
+
+    def test_schedule_excessively(self):
+        am = ActionManager()
+        action = dummyAction(priority=1)
+        # Schedule the same action just the allowed number of times
+        for _ in range(am._max_num_times_previous):
+            am.scheduleAction(action)
+        # Schedule the action one more time, and check if an exception is raised
+        self.assertRaises(ExcessiveRepeatActionScheduleError, am.scheduleAction, action)
 
     def test_get_highest_priority_active_none(self):
         am = ActionManager()

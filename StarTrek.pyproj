@@ -36,6 +36,9 @@
     <Compile Include="dummy_actions.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="exceptions.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="game.py">
       <SubType>Code</SubType>
     </Compile>

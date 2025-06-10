@@ -227,8 +227,9 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='tor = Photon Torpedo Calculator\n'
         exp_val+='bas = Starbase Calculator\n'
         exp_val+='nav = Navigation Calculator\n'
-        exp_val+='Enter computer command: '
+        exp_val+='Enter computer command: \n'
         exp_val+='Invalid computer command.\n'
+        exp_val+='\n'
         exp_val+='The main computer is malfunctioning.'
         command_prompt()
         # Get the captured output
@@ -1827,6 +1828,7 @@ class Test_test_startrek(unittest.TestCase):
         self.assertRaises(SystemExit, run)
 
     def test_run_ai(self):
+        self.assertTrue(False) # Temporary to keep this from running.
         random.seed(1234567890)
         # NOTE: This is quite a crude test of run().
         self.assertRaises(NotImplementedError, run, True)

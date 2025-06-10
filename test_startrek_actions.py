@@ -81,7 +81,8 @@ class Test_FindKlingonShipAction(unittest.TestCase):
 
     def test_execute(self):
         seq=startrek_actions.FindKlingonShipAction(expiry_time=3, priority=10)
-        seq.execute() # Execute long range scan to find the klingon ship quadrant.
+        seq.execute() # Execute long range scan action to find the klingon ship quadrant.
+        seq.execute() # Execute the check galactic record action, which should do nothing, since long range scan found klingon.
         seq.execute() # Execute the action to navigate to the klingon ship quadrant.
         # Have we arrived at quadrant (1,6) where the klingon ship is located?
         exp_val = (1, 6)
@@ -147,6 +148,72 @@ class Test_LongRangeScanAction(unittest.TestCase):
 
     def test_getGoalChange_others(self):
         act = startrek_actions.LongRangeScanAction()
+        goal = GameGoal()
+        exp_val = GoalInsistence.ZERO
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+
+class Test_CheckGalacticRecordAction(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        startrek.generate_sector()
+        startrek.long_range_scan()
+        self._world = WorldInterface()
+
+    def test_execute(self):
+        seq = GameActionSequence()
+        act = startrek_actions.CheckGalacticRecordAction(expiry_time=3, priority=10,
+                                                         read_blackboard=seq.readFromBlackBoard,
+                                                         write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        # Did we get the expected klingon ship quadrant?
+        exp_val = (1,6)
+        act_val = (seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.KLINGON_QUAD_X),
+                   seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.KLINGON_QUAD_Y))
+        self.assertTupleEqual(exp_val, act_val)
+        # Did we get the expected starbase quadrant?
+        exp_val = (1,7)
+        act_val = (seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_QUAD_X),
+                   seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_QUAD_Y))
+        self.assertTupleEqual(exp_val, act_val)
+
+    def test_execute_computer_controls_damaged(self):
+        glob_vars.the_game.computer_damage = 1  # Set the computer controls to be damaged.
+        seq = GameActionSequence()
+        act = startrek_actions.CheckGalacticRecordAction(expiry_time=3, priority=10,
+                                                         read_blackboard=seq.readFromBlackBoard,
+                                                         write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        # Should not find any klingon ship quadrant of starbbase quandrant info on blackboard
+        self.assertIsNone(seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.KLINGON_QUAD_X))
+        self.assertIsNone(seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_QUAD_Y))
+
+    def test_isComplete_True(self):
+        seq = GameActionSequence()
+        act = startrek_actions.CheckGalacticRecordAction(expiry_time=3, priority=10,
+                                                         read_blackboard=seq.readFromBlackBoard,
+                                                         write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        self.assertTrue(act.isComplete())
+
+    def test_isComplete_False(self):
+        act = startrek_actions.CheckGalacticRecordAction()
+        self.assertFalse(act.isComplete())
+
+    def test_getGoalChange(self):
+        act = startrek_actions.CheckGalacticRecordAction()
+        goal = FindKlingonShipGoal()
+        exp_val = -GoalInsistence.HIGH
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+    def test_getGoalChange_others(self):
+        act = startrek_actions.CheckGalacticRecordAction()
         goal = GameGoal()
         exp_val = GoalInsistence.ZERO
         act_val = act.getGoalChange(goal)
@@ -284,6 +351,21 @@ class Test_NavigateToQuadrantAction(unittest.TestCase):
         act_val = (gm.quadrant_x, gm.quadrant_y)
         self.assertTupleEqual(exp_val, act_val)
         self.assertFalse(act.isComplete())
+
+    def test_execute_max_attempts_exceeded(self):
+        seq = GameActionSequence()
+        act=startrek_actions.NavigateToQuadrantAction(read_blackboard=seq.readFromBlackBoard,
+                                                      write_blackboard=seq.writeToBlackBoard)
+        # Since qx and qy are not set, and can't be read from sequence blackbaord, execution will fail,
+        # here on the first attempt.
+        act.execute()
+        self.assertFalse(act.isComplete())
+        # Now it will fail on a second attempt.
+        act.execute()
+        self.assertFalse(act.isComplete())
+        # Now on the third attempt, it will fail again, but be marked complete.
+        act.execute()
+        self.assertTrue(act.isComplete())
 
     def test_getGoalChange(self):
         act = startrek_actions.NavigateToQuadrantAction()

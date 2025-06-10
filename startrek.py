@@ -41,22 +41,23 @@ def run(game_ai=False):
     print_mission()
     generate_sector()
     print_strings(strings.commandStrings)
-    while game.energy > 0 and not game.destroyed and game.klingons > 0 and game.time_remaining > 0:
-        if not game_ai:
+    if not game_ai:
+        while game.energy > 0 and not game.destroyed and game.klingons > 0 and game.time_remaining > 0:
             command_prompt()
-        else:
-            # TODO: Implement ai game play entry point.
-            play_ai_game()
-            return None
-            # raise NotImplementedError("Game AI not implemented yet.")
-        print_game_status()
+    else:
+        play_ai_game()
+        # raise NotImplementedError("Game AI not implemented yet.")
+    print_game_status()
     return None
 
 
 def play_ai_game():
     """
     Play the game using AI.
+    :return: None
     """
+    game=glob_vars.the_game
+
     gob = Gob()
     # Create the goals for the Star Trek game.
     gob.add_goal(startrek_goals.SurviveGoal())
@@ -72,8 +73,7 @@ def play_ai_game():
     
     mgr = ActionManager()
     
-    num_acts = 0
-    while num_acts < 100: # TTD: Change to while not game over
+    while game.energy > 0 and not game.destroyed and game.klingons > 0 and game.time_remaining > 0:
     
         # Choose the best action to execute.
         bestAct = gob.chooseAction()
@@ -83,8 +83,8 @@ def play_ai_game():
         # In this context, one action, combination, or sequence should have completely executed.
         while len(mgr) > 0:
             mgr.execute()
-        num_acts += 1
 
+    return None
 
 
 def print_game_status():
@@ -133,7 +133,8 @@ def command_prompt():
         output = shield_controls()
         print_strings(output)
     elif command == "com":
-        computer_controls()
+        output = computer_controls()
+        print_strings(output)
     elif command.startswith('qui') or command.startswith('exi'):
         exit()
     else:
@@ -141,13 +142,55 @@ def command_prompt():
 
 
 def computer_controls():
+    """
+    Entry point for the computer controls.
+    :return: List of strings to be printed, e.g., using print_strings()
+    """
+    ret_val=[] # list of strings
+    (possible, output) = _computer_controls_precheck()
+    for i in output:
+        ret_val.append(i)
+    if not possible:
+        return ret_val
+    command = _computer_controls_input()
+    output = _command_computer_controls(command)
+    for i in output:
+        ret_val.append(i)
+    return ret_val
+
+
+def _computer_controls_precheck():
+    """
+    Check that computer controls are available.
+    :return: Tuple (Is it possible to use computer controls True/False, list of strings to be printed), as tuple (boolean, list of strings)
+    """
     game=glob_vars.the_game
+    ret_val=[] # list of strings
+    possible = True
     if game.computer_damage > 0:
-        print("The main computer is damaged. Repairs are underway.")
-        print
-        return
+        possible = False
+        ret_val.append("The main computer is damaged. Repairs are underway.")
+        ret_val.append("")
+    return (possible, ret_val)
+
+
+def _computer_controls_input():
+    """
+    Get requrired input for computer controls.
+    :return: computer command, as string
+    """
     print_strings(strings.computerStrings)
     command = input("Enter computer command: ").strip().lower()
+    return command
+
+
+def _command_computer_controls(command=''):
+    """
+    Actually execute the computer controls command based on user input.
+    :param command: The command to execute, as string
+    :return: List of strings to be printed, e.g., using print_strings()
+    """
+    ret_val=[] # list of strings
     if command == "rec":
         display_galactic_record()
     elif command == "sta":
@@ -159,10 +202,13 @@ def computer_controls():
     elif command == "nav":
         navigation_calculator()
     else:
-        print
-        print("Invalid computer command.")
-        print
-    induce_damage(4)
+        ret_val.append("")
+        ret_val.append("Invalid computer command.")
+        ret_val.append("")
+    output = induce_damage(4)
+    for i in output:
+        ret_val.append(i)
+    return ret_val
 
 
 def navigation_calculator():
@@ -239,13 +285,39 @@ def display_status():
 
 
 def display_galactic_record():
-    game=glob_vars.the_game
+    """
+    Entry point for displaying the galactic record.
+    """
+    output = _fetch_galactic_record()
     print
     sb = ""
     print("-------------------------------------------------")
     for i in range(8):
         for j in range(8):
             sb += "| "
+            klingon_count = output[i][j][0]
+            starbase_count = output[i][j][1]
+            star_count = output[i][j][2]
+            sb = sb + \
+                "{0}{1}{2} ".format(klingon_count, starbase_count, star_count)
+        sb += "|"
+        print(sb)
+        sb = ""
+        print("-------------------------------------------------")
+    print
+
+
+def _fetch_galactic_record():
+    """
+    Actually fetch the galactic record from the game state.
+    :return: List of lists of strings, where each string is of the form 'xyz', where x is the number of klingons,
+        y is the number of starbases, and z is the number of stars in the quadrant. Access the return value using
+        ret_val[y-index][x-index], where y-index is the row index and x-index is the column index.
+    """
+    game=glob_vars.the_game
+    ret_val = [[str() for _ in range(8)] for _ in range(8)] # list of lists of strings, i.e., ret_val[y-index][x-index]]
+    for i in range(8):
+        for j in range(8):
             klingon_count = 0
             starbase_count = 0
             star_count = 0
@@ -254,13 +326,8 @@ def display_galactic_record():
                 klingon_count = quadrant.klingons
                 starbase_count = 1 if quadrant.starbase else 0
                 star_count = quadrant.stars
-            sb = sb + \
-                "{0}{1}{2} ".format(klingon_count, starbase_count, star_count)
-        sb += "|"
-        print(sb)
-        sb = ""
-        print("-------------------------------------------------")
-    print
+            ret_val[i][j] = "{0}{1}{2} ".format(klingon_count, starbase_count, star_count)
+    return ret_val
 
 
 def phaser_controls():
@@ -498,34 +565,44 @@ def klingons_attack():
 
 
 def induce_damage(item):
+    """
+    Induce damage to a random system. One in seven chance of a system suffering damage. Damage suffered
+    is between 1 and 5.
+    :param item: The system to damage, as int. If negative, a random system is chosen.
+        Note: 0=Navigation, 1=Short Range Scanner, 2=Long Range Scanner, 3=Shield Control,
+              4=Computer, 5=Photon Torpedo Control, 6=Phasers.
+    :return: List of strings to be printed, e.g., using print_strings()
+    """
     game=glob_vars.the_game
+    ret_val=[] # list of strings
     if random.randint(0, 6) > 0:
-        return
+        return ret_val
     damage = 1 + random.randint(0, 4)
     if item < 0:
         item = random.randint(0, 6)
     if item == 0:
         game.navigation_damage = damage
-        print("Warp engines are malfunctioning.")
+        ret_val.append("Warp engines are malfunctioning.")
     elif item == 1:
         game.short_range_scan_damage = damage
-        print("Short range scanner is malfunctioning.")
+        ret_val.append("Short range scanner is malfunctioning.")
     elif item == 2:
         game.long_range_scan_damage = damage
-        print("Long range scanner is malfunctioning.")
+        ret_val.append("Long range scanner is malfunctioning.")
     elif item == 3:
         game.shield_control_damage = damage
-        print("Shield controls are malfunctioning.")
+        ret_val.append("Shield controls are malfunctioning.")
     elif item == 4:
         game.computer_damage = damage
-        print("The main computer is malfunctioning.")
+        ret_val.append("The main computer is malfunctioning.")
     elif item == 5:
         game.photon_damage = damage
-        print("Photon torpedo controls are malfunctioning.")
+        ret_val.append("Photon torpedo controls are malfunctioning.")
     elif item == 6:
         game.phaser_damage = damage
-        print("Phasers are malfunctioning.")
-    print
+        ret_val.append("Phasers are malfunctioning.")
+    ret_val.append("")
+    return ret_val
 
 
 def repair_damage():
@@ -968,7 +1045,9 @@ def _navigation(course, warp_factor):
                 ret_val.append(i)
             ret_val.append("")
         elif not repair_damage():
-            induce_damage(-1)
+            output = induce_damage(-1)
+            for i in output:
+                ret_val.append(i)
 
     return ret_val
 

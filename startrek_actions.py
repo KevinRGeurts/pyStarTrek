@@ -40,17 +40,19 @@ class StarTrekAction(GameAction):
 
 class FindKlingonShipAction(GameActionSequence):
     """
-    Represents a sequence of actions in a Star Trek game where a player scans to find a quadrant with a Klingon ship
-    and then navigates to that quadrant.
+    Represents a sequence of actions in a Star Trek game where a player scans and checks the galactic record
+    to find a quadrant with a Klingon ship, and then navigates to that quadrant.
     :param expiry_time: The time in an arbitrary count-up from zero until the action sequence expires, as int.
     :param priority: The priority of the action sequence. Higher numbers indicate higher priority. As int.
     """
     def __init__(self, expiry_time=0, priority=0):
         scan_act = LongRangeScanAction(read_blackboard=self.readFromBlackBoard,
                                        write_blackboard=self.writeToBlackBoard)
+        rec_act = CheckGalacticRecordAction(read_blackboard=self.readFromBlackBoard,
+                                            write_blackboard=self.writeToBlackBoard)
         nav_act = NavigateToQuadrantAction(read_blackboard=self.readFromBlackBoard,
                                            write_blackboard=self.writeToBlackBoard)
-        super().__init__(expiry_time, priority, seq_acts=[scan_act, nav_act])
+        super().__init__(expiry_time, priority, seq_acts=[scan_act, rec_act, nav_act])
 
 
 class LongRangeScanAction(StarTrekAction):
@@ -83,45 +85,57 @@ class LongRangeScanAction(StarTrekAction):
             return
         # Perform the long range scan
         scan_output = startrek._long_range_scan()
-        # Find the first quadrant, if any, in the scan, that has a klingon ship.
-        quad_x = self._world.quadrant_x
-        quad_y = self._world.quadrant_y
-        klingon_quad_x = -1
-        klingon_quad_y = -1
-        try:
-            for i in range(3):
-                for j in range(3):
-                    if int(scan_output[i][j][0]) > 0:
-                        klingon_quad_x = quad_x + j - 1
-                        klingon_quad_y = quad_y + i - 1
-                        raise StopIteration  # Break out of both loops when the first klingon ship is found
-        except StopIteration:
-            pass
-        # If a klingon ship was found, write coordinates to blackboard, if we have one
-        if klingon_quad_x >= 0 and klingon_quad_y >= 0:
-            if self._write_blackboard is not None:
-                print(f"LongRangeScan Action found Klingon ship at quadrant ({klingon_quad_x+1}, {klingon_quad_y+1}).")
-                self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_X, klingon_quad_x)
-                self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_Y, klingon_quad_y)
+
+        # Look for a quadrant with a klingon ship in the long range scan, unless coordinates of a quadrant
+        # with a klingon ship were already written to the blackboard.
+        if self._read_blackboard is not None and \
+           self._read_blackboard(BlackboardDatumType.KLINGON_QUAD_X) is None:
+
+            # Find the first quadrant, if any, in the scan, that has a klingon ship.
+            quad_x = self._world.quadrant_x
+            quad_y = self._world.quadrant_y
+            klingon_quad_x = -1
+            klingon_quad_y = -1
+            try:
+                for i in range(3):
+                    for j in range(3):
+                        if int(scan_output[i][j][0]) > 0:
+                            klingon_quad_x = quad_x + j - 1
+                            klingon_quad_y = quad_y + i - 1
+                            raise StopIteration  # Break out of both loops when the first klingon ship is found
+            except StopIteration:
+                pass
+            # If a klingon ship was found, write coordinates to blackboard, if we have one
+            if klingon_quad_x >= 0 and klingon_quad_y >= 0:
+                if self._write_blackboard is not None:
+                    print(f"LongRangeScanAction found Klingon ship at quadrant ({klingon_quad_x+1}, {klingon_quad_y+1}).")
+                    self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_X, klingon_quad_x)
+                    self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_Y, klingon_quad_y)
+
+        # Look for a quadrant with a starbase in the long range scan, unless coordinates of a quadrant
+        # with a starbase were already written to the blackboard.
+        if self._read_blackboard is not None and \
+           self._read_blackboard(BlackboardDatumType.BASE_QUAD_X) is None:
         
-        # Find the first quadrant, if any, in the scan, that has a starbase.
-        base_quad_x = -1
-        base_quad_y = -1
-        try:
-            for i in range(3):
-                for j in range(3):
-                    if int(scan_output[i][j][1]) > 0:
-                        base_quad_x = quad_x + j - 1
-                        base_quad_y = quad_y + i - 1
-                        raise StopIteration  # Break out of both loops when the first klingon ship is found
-        except StopIteration:
-            pass
-        # If a starbase was found, write coordinates to blackboard, if we have one
-        if base_quad_x >= 0 and base_quad_y >= 0:
-            print(f"LongRangeScan Action found starbase at quadrant ({base_quad_x+1}, {base_quad_y+1}).")
-            if self._write_blackboard is not None:
-                self._write_blackboard(BlackboardDatumType.BASE_QUAD_X, base_quad_x)
-                self._write_blackboard(BlackboardDatumType.BASE_QUAD_Y, base_quad_y)
+            # Find the first quadrant, if any, in the scan, that has a starbase.
+            base_quad_x = -1
+            base_quad_y = -1
+            try:
+                for i in range(3):
+                    for j in range(3):
+                        if int(scan_output[i][j][1]) > 0:
+                            base_quad_x = quad_x + j - 1
+                            base_quad_y = quad_y + i - 1
+                            raise StopIteration  # Break out of both loops when the first starbase is found
+            except StopIteration:
+                pass
+            # If a starbase was found, write coordinates to blackboard, if we have one
+            if base_quad_x >= 0 and base_quad_y >= 0:
+                print(f"LongRangeScanAction found starbase at quadrant ({base_quad_x+1}, {base_quad_y+1}).")
+                if self._write_blackboard is not None:
+                    self._write_blackboard(BlackboardDatumType.BASE_QUAD_X, base_quad_x)
+                    self._write_blackboard(BlackboardDatumType.BASE_QUAD_Y, base_quad_y)
+        
         self._is_complete = True  # Mark the action as complete after the scan is executed, regardless of results.
         return
 
@@ -137,6 +151,114 @@ class LongRangeScanAction(StarTrekAction):
         Return the goal insistence change associated with completing the long range scan.
         :param goal: The goal to check against, as GameGoal object.
         :return: The goal insistence change associated with completing the long range scan, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        if isinstance(goal, FindKlingonShipGoal):
+            # Not to be taken literally, but simply to indicated that completing this action will lower
+            # the insistence of the FindKlingonShipGoal.
+            return -GoalInsistence.HIGH
+        else:
+            return GoalInsistence.ZERO
+
+
+class CheckGalacticRecordAction(StarTrekAction):
+    """
+    Represents an action in a Star Trek game where a player checks the computer's galactic record,
+    with intent to find a Klingon Ship or a Starbase.
+    """
+    def __init__(self, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+        """
+        :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
+        :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
+        """
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
+        self._is_complete = False
+    
+    def execute(self):
+        """
+        Execute the check galactic record action.
+        :return: None
+        """
+        # TODO: An improvement here would be to find the klingon ship or starbase that is closest to
+        # the Enterprise's current quadrant, rather than just taking the first one found in the galactic record.
+        # As is, this action will waste energy (to navigate) and time.
+
+        # Check if computer control is damaged.
+        (possible, output) = startrek._computer_controls_precheck()
+        if not possible:
+            # Computer control is damaged, and cannot be used
+            startrek.print_strings(output)
+            return
+        # Obtain the galactic record
+        rec_output = startrek._fetch_galactic_record()
+
+        # Look for a quadrant with a klingon ship in the galactic record, unless coordinates of a quadrant
+        # with a klingon ship were already written to the blackboard.
+        if self._read_blackboard is not None and \
+           self._read_blackboard(BlackboardDatumType.KLINGON_QUAD_X) is None:
+
+            # Find the first quadrant, if any, in the record, that has a klingon ship.
+            klingon_quad_x = -1
+            klingon_quad_y = -1
+            try:
+                for i in range(8):
+                    for j in range(8):
+                        if int(rec_output[i][j][0]) > 0:
+                            klingon_quad_x = j
+                            klingon_quad_y = i
+                            raise StopIteration  # Break out of both loops when the first klingon ship is found
+            except StopIteration:
+                pass
+            # If a klingon ship was found, write coordinates to blackboard, if we have one.
+            if klingon_quad_x >= 0 and klingon_quad_y >= 0:
+                if self._write_blackboard is not None:
+                    print(f"CheckGalacticRecordAction found Klingon ship at quadrant ({klingon_quad_x+1}, {klingon_quad_y+1}).")
+                    self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_X, klingon_quad_x)
+                    self._write_blackboard(BlackboardDatumType.KLINGON_QUAD_Y, klingon_quad_y)
+
+        # Look for a quadrant with a starbase in the galactic record, unless coordinates of a quadrant
+        # with a starbase were already written to the blackboard.
+        if self._read_blackboard is not None and \
+           self._read_blackboard(BlackboardDatumType.BASE_QUAD_X) is None:
+        
+            # Find the first quadrant, if any, in the scan, that has a starbase.
+            base_quad_x = -1
+            base_quad_y = -1
+            try:
+                for i in range(8):
+                    for j in range(8):
+                        if int(rec_output[i][j][1]) > 0:
+                            base_quad_x = j
+                            base_quad_y = i
+                            raise StopIteration  # Break out of both loops when the first starbase is found
+            except StopIteration:
+                pass
+            # If a starbase was found, write coordinates to blackboard, if we have one
+            if base_quad_x >= 0 and base_quad_y >= 0:
+                print(f"CheckGalacticRecordAction found starbase at quadrant ({base_quad_x+1}, {base_quad_y+1}).")
+                if self._write_blackboard is not None:
+                    self._write_blackboard(BlackboardDatumType.BASE_QUAD_X, base_quad_x)
+                    self._write_blackboard(BlackboardDatumType.BASE_QUAD_Y, base_quad_y)
+        
+        self._is_complete = True  # Mark the action as complete after the galactic record is checked, regardless of results.
+        return
+
+    def isComplete(self):
+        """
+        Return whether this action is complete.
+        :return: True if the action is complete, False otherwise, as boolean.
+        """
+        return self._is_complete
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with completing the check of the galactic record.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with completing the check of the galactic record, as int.
         """
         assert(isinstance(goal, GameGoal))
         if isinstance(goal, FindKlingonShipGoal):
@@ -256,6 +378,9 @@ class NavigateToQuadrantAction(StarTrekAction):
         self.qx = qx
         if qy is not None: assert(qy>=0 and qy<=7)
         self.qy = qy
+        # How many times have we attempted to navigate to the target quadrant?
+        self._attempts = 0
+        self._max_attempts = 2  # If we attempt to navigate to the same quadrant too many times, we'll give up.
 
     def isComplete(self):
         """
@@ -267,6 +392,10 @@ class NavigateToQuadrantAction(StarTrekAction):
         if self._world.quadrant_x == self.qx and self._world.quadrant_y == self.qy:
             # Navigation was successful
             return True
+        elif self._attempts > self._max_attempts:
+            # If we have attempted to navigate to the target quadrant too many times, then we give up.
+            startrek.print_strings(["NavigateToQuadrantAction failed: too many attempts to navigate to the same quadrant."])
+            return True
         else:
             return False
 
@@ -275,6 +404,9 @@ class NavigateToQuadrantAction(StarTrekAction):
         Execute the navigation action.
         :return: None
         """
+
+        self._attempts += 1
+
         # If we don't have target quadrant coordinates, then we need to read them from the blackboard.
         if self.qx is None:
             assert(self._read_blackboard is not None)
@@ -284,7 +416,7 @@ class NavigateToQuadrantAction(StarTrekAction):
             self.qy = self._read_blackboard(BlackboardDatumType.KLINGON_QUAD_Y)
         if self.qx is None or self.qy is None:
             # We don't have target quadrant coordinates, so we cannot navigate
-            startrek.print_strings(["Cannot navigate to quadrant: target coordinates not specified."])
+            startrek.print_strings(["NavigateToQuadrantAction Cannot navigate to quadrant: target coordinates not specified."])
             return
 
         # Make sure we aren't trying to navigate to the same quadrant

@@ -2,6 +2,7 @@
 
 # local imports
 from game_action import GameAction
+from exceptions import ExcessiveRepeatActionScheduleError
 
 
 class ActionManager(object):
@@ -18,6 +19,14 @@ class ActionManager(object):
         self._active = []
         # The current time, a simple counter
         self._currentTime = 0
+        # Store some information that will let us decide the the AI is stuck in a loop where it is
+        # continuously be asked to execute the same action.
+        # The type of GameAction that was scheduled before the current one.
+        self._previous_scheduled_type = None
+        # Number of sequential times the previous was scheduled.
+        self._num_times_previous = 0
+        # If we exceed this number, we will raise an exception.
+        self._max_num_times_previous = 10
 
     @property
     def currentTime(self):
@@ -38,12 +47,22 @@ class ActionManager(object):
         """
         Add an action to be executed to the list.
         :param action: The action to be scheduled, as GameAction object.
+        :raises AssertionError: If the action is not an instance of GameAction.
+        :raises ExcessiveRepeatActionScheduleError: If the same type of action is scheduled too many times in a row.
         :return: None
         """
         assert(isinstance(action, GameAction))
         # Add the action to the list of pending actions, and sort it in descending order of priority.
         self._action_list.append(action)
         self._action_list.sort(key=lambda x: x.priority, reverse=True)
+        if action.__class__ == self._previous_scheduled_type:
+            self._num_times_previous += 1
+        else:
+            self._previous_scheduled_type = action.__class__
+            self._num_times_previous = 1
+        if self._num_times_previous > self._max_num_times_previous:
+            raise ExcessiveRepeatActionScheduleError(action_type=self._previous_scheduled_type,
+                                                     num_times=self._num_times_previous)
         return None
 
     def getHighestPriorityActive(self):
