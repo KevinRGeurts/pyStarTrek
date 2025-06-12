@@ -1,4 +1,5 @@
 from game_goal import GameGoal, GoalInsistence
+from exceptions import ActionCannotAchieveGoalError
 
 
 class GameAction(object):
@@ -236,7 +237,11 @@ class GameActionSequence(GameAction):
             return
         
         # Execute the current action in the sequence
-        self._action_list[self._activeIndex].execute()
+        try:
+            self._action_list[self._activeIndex].execute()
+        except ActionCannotAchieveGoalError as e:
+            # Re-raise the exception with the current action and parent action set to this sequence
+            raise ActionCannotAchieveGoalError(action=e._action, parent_action=self)
 
         # If current action is complete, move to the next action in the sequence
         if self._action_list[self._activeIndex].isComplete():

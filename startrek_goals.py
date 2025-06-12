@@ -4,6 +4,7 @@
 from game_goal import GameGoal, GoalInsistence
 from world_interface import WorldInterface
 
+
 class SurviveGoal(GameGoal):
     """
     This class represents the goal in a Star Trek game for the Enterprise to survive the game.
@@ -70,5 +71,23 @@ class DestroyKlingonShipGoal(GameGoal):
             return GoalInsistence.ZERO
 
 
+class ExploreGalaxyGoal(GameGoal):
+    """
+    This class represents the goal in a Star Trek game for the Enterprise to explore the (unscanned) galaxy.
+    """
+    def __init__(self):
+        """
+        Initialize the ExploreGalaxyGoal object.
+        """
+        super().__init__(name="ExploreGalaxy")
+        self._world=WorldInterface()
 
-
+    def getInsistence(self):
+        """
+        Return the insistence value of the ExploreGalaxy goal.
+        :return: The insistence of the ExploreGalaxy goal, as int
+        """
+        if self._world.quadrant.klingons <= 0:
+            return GoalInsistence.MEDIUM
+        else:
+            return GoalInsistence.ZERO

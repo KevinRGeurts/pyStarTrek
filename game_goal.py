@@ -9,8 +9,9 @@ class GoalInsistence(IntEnum):
     """
     ZERO = 0
     LOW = 2
-    HIGH = 4
-    URGENT = 8
+    MEDIUM = 4
+    HIGH = 8
+    URGENT = 16
 
 
 class GameGoal(object):

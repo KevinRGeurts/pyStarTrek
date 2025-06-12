@@ -15,7 +15,20 @@ class ExcessiveRepeatActionScheduleError(GameAIError):
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args)
-        self.deal_info = kwargs.get('action_type')
-        self.go_play_score = kwargs.get('num_times')
+        self._action_type = kwargs.get('action_type')
+        self._num_times = kwargs.get('num_times')
+
+
+class ActionCannotAchieveGoalError(GameAIError):
+    """
+    Custom exception to be raised when, while an action is executing, it is determined that the action
+    cannot achieve the goal.
+    Arguments expected in **kwargs:
+        action: The GameAction that was executing.
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args)
+        self._action = kwargs.get('action')
+        self._parent_action = kwargs.get('parent_action', None)  # Optional parent action if this is a sub-action
 
 

@@ -9,6 +9,7 @@ from quadrant import Quadrant
 from utilities import print_strings, compute_direction, distance, input_double
 from gob import Gob
 from action_manager import ActionManager
+from exceptions import ActionCannotAchieveGoalError
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import startrek_goals
@@ -56,6 +57,14 @@ def play_ai_game():
     Play the game using AI.
     :return: None
     """
+
+    # Here is a little block of code for debugging purposes.
+    # act=startrek_actions.NavigateToQuadrantAction(qx=2, qy=6, expiry_time=3, priority=10)
+    # act.execute()
+    # act.execute()
+    # act.execute()
+    # End of debugging block.
+
     game=glob_vars.the_game
 
     gob = Gob()
@@ -63,6 +72,7 @@ def play_ai_game():
     gob.add_goal(startrek_goals.SurviveGoal())
     gob.add_goal(startrek_goals.FindKlingonShipGoal())
     gob.add_goal(startrek_goals.DestroyKlingonShipGoal())
+    gob.add_goal(startrek_goals.ExploreGalaxyGoal())
     # Create the possible actions for the Star Trek game.
     act1=startrek_actions.FindKlingonShipAction(expiry_time=10, priority=10)
     gob.add_action(act1)
@@ -70,19 +80,40 @@ def play_ai_game():
     gob.add_action(act2)
     act3=startrek_actions.LaunchPhotonTorpedoAction(expiry_time=10, priority=10)
     gob.add_action(act3)
+    act4=startrek_actions.ExploreUnknownRegionAction(expiry_time=10, priority=10)
+    gob.add_action(act4)
     
     mgr = ActionManager()
     
+    removed_goal = None  # This will be used to hold any goal temporarily removed from the Gob, if needed.
+
     while game.energy > 0 and not game.destroyed and game.klingons > 0 and game.time_remaining > 0:
     
         # Choose the best action to execute.
-        bestAct = gob.chooseAction()
+        (bestAct, topGoal) = gob.chooseAction()
         bestAct.expiry_time = mgr.currentTime + 10  # Set the expiry time for the action.
         mgr.scheduleAction(bestAct)
+
+        # If there is any goal that was temporarily removed, we need to add it back to the Gob.
+        if removed_goal is not None:
+            gob.add_goal(removed_goal)
+            removed_goal = None
+
         # Continue to execute the action manager until it is empty.
         # In this context, one action, combination, or sequence should have completely executed.
-        while len(mgr) > 0:
-            mgr.execute()
+        try:
+            while len(mgr) > 0:
+                mgr.execute()
+        except ActionCannotAchieveGoalError as e:
+            # TODO: Need to have the Gob also return from chooseAction() the goal that was selected.
+            # Then temporarily remove that goal from the Gob, so that it is not selected again, immediately.
+            # As an example, this is to let us shift from selecting a goal to find a Klingon ship
+            # to a goal to expore the galaxy. An alternative might be to remove the action. However,
+            # remember that the actions in the Gob are prototypes, and the one returned in the exception
+            # is an actual action that was deep copied from the prototype. Actually think we want to remove the goal.
+            # Since the problem is that we have two goals for which the insistence is not easily differentiated.
+            removed_goal = topGoal
+            gob.remove_goal(topGoal)
 
     return None
 

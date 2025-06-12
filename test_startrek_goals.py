@@ -8,7 +8,7 @@ from unittest.mock import patch
 # local imports
 from world_interface import WorldInterface
 from game_goal import GoalInsistence
-from startrek_goals import SurviveGoal, FindKlingonShipGoal, DestroyKlingonShipGoal
+from startrek_goals import SurviveGoal, FindKlingonShipGoal, DestroyKlingonShipGoal, ExploreGalaxyGoal
 from startrek_actions import RaiseShieldsAction
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 
@@ -124,6 +124,29 @@ class Test_SurviveGoal(unittest.TestCase):
         # Check the insistence of the Survive goal
         goal=SurviveGoal()
         exp_val=GoalInsistence.ZERO
+        act_val=goal.getInsistence()
+        self.assertEqual(act_val, exp_val)
+
+
+class Test_ExploreGalaxyGoal(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        startrek.generate_sector()
+
+    def test_init(self):
+        goal=ExploreGalaxyGoal()
+        self.assertEqual(goal.name, "ExploreGalaxy")
+
+    def test_str(self):
+        goal=ExploreGalaxyGoal()
+        exp_val = "Goal: ExploreGalaxy"
+        act_val = str(goal)
+        self.assertEqual(act_val, exp_val)
+
+    def test_getInsistence_no_klingon_ship_in_quadrant(self):
+        goal=ExploreGalaxyGoal()
+        exp_val=GoalInsistence.MEDIUM
         act_val=goal.getInsistence()
         self.assertEqual(act_val, exp_val)
 

@@ -5,8 +5,9 @@ from enum import StrEnum
 from math import exp
 from game_action import GameAction, GameActionSequence
 from game_goal import GameGoal, GoalInsistence
-from startrek_goals import DestroyKlingonShipGoal, SurviveGoal, FindKlingonShipGoal
+from startrek_goals import DestroyKlingonShipGoal, ExploreGalaxyGoal, SurviveGoal, FindKlingonShipGoal
 from world_interface import WorldInterface
+from exceptions import ActionCannotAchieveGoalError
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
@@ -19,7 +20,8 @@ class BlackboardDatumType(StrEnum):
     KLINGON_QUAD_Y = 'klingon_quad_y'
     BASE_QUAD_X = 'base_quad_x'
     BASE_QUAD_Y = 'base_quad_y'
-
+    UNSCANNED_QUAD_X = 'unscanned_quad_x'
+    UNSCANNED_QUAD_Y = 'unscanned_quad_y'    
 
 class StarTrekAction(GameAction):
     """
@@ -36,6 +38,22 @@ class StarTrekAction(GameAction):
         """
         super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
         self._world = WorldInterface()
+
+
+class ExploreUnknownRegionAction(GameActionSequence):
+    """
+    Represents a sequence of actions in a Star Trek game where a player checks the galactic record
+    to find a quadrant that has not been scanned, then navigates to that quadrant, then performs a long-range scan.
+    :param expiry_time: The time in an arbitrary count-up from zero until the action sequence expires, as int.
+    :param priority: The priority of the action sequence. Higher numbers indicate higher priority. As int.
+    """
+    def __init__(self, expiry_time=0, priority=0):
+        rec_act = FindUnscannedQuadrantAction(read_blackboard=self.readFromBlackBoard,
+                                              write_blackboard=self.writeToBlackBoard)
+        nav_act = NavigateToQuadrantAction(looking_for='unscanned',
+                                           read_blackboard=self.readFromBlackBoard,
+                                           write_blackboard=self.writeToBlackBoard)
+        super().__init__(expiry_time, priority, seq_acts=[rec_act, nav_act])
 
 
 class FindKlingonShipAction(GameActionSequence):
@@ -154,6 +172,90 @@ class LongRangeScanAction(StarTrekAction):
         """
         assert(isinstance(goal, GameGoal))
         if isinstance(goal, FindKlingonShipGoal):
+            # Not to be taken literally, but simply to indicated that completing this action will lower
+            # the insistence of the FindKlingonShipGoal.
+            return -GoalInsistence.HIGH
+        else:
+            return GoalInsistence.ZERO
+
+
+class FindUnscannedQuadrantAction(StarTrekAction):
+    """
+    Represents an action in a Star Trek game where a player finds an unscanned quadrant in the galactic record.
+    """
+    def __init__(self, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+        """
+        :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
+        :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
+        """
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
+        self._is_complete = False
+    
+    def execute(self):
+        """
+        Execute the find unscanned quadrant action.
+        :return: None
+        """
+        # TODO: An improvement here would be to find the unscanned quadrant that is closest to
+        # the Enterprise's current quadrant, rather than just taking the first one found in the galactic record.
+        # And further, finding one that would maximize the number of new quadrants scanned.
+        # As is, this action will waste energy (to navigate) and time.
+
+        # Check if computer control is damaged.
+        (possible, output) = startrek._computer_controls_precheck()
+        if not possible:
+            # Computer control is damaged, and cannot be used
+            startrek.print_strings(output)
+            return
+        # Obtain the galactic record
+        rec_output = startrek._fetch_galactic_record()
+
+        # Look for an unscanned quadrant in the galactic record, unless coordinates of an unscanned quadrant
+        # were already written to the blackboard.
+        if self._read_blackboard is not None and \
+           self._read_blackboard(BlackboardDatumType.UNSCANNED_QUAD_X) is None:
+
+            # Find the first quadrant, if any, in the record, that has 0 stars, indicating it hasn't been scanned yet.
+            unscanned_quad_x = -1
+            unscanned_quad_y = -1
+            try:
+                for i in range(8):
+                    for j in range(8):
+                        if int(rec_output[i][j][2]) == 0:
+                            unscanned_quad_x = j
+                            unscanned_quad_y = i
+                            raise StopIteration  # Break out of both loops when the first unscanned quadrrant is found
+            except StopIteration:
+                pass
+            # If an unscanned quadrant was found, write coordinates to blackboard, if we have one.
+            if unscanned_quad_x >= 0 and unscanned_quad_y >= 0:
+                if self._write_blackboard is not None:
+                    print(f"FindUnscannedQuadrantAction found unscanned quadrant ({unscanned_quad_x+1}, {unscanned_quad_y+1}).")
+                    self._write_blackboard(BlackboardDatumType.UNSCANNED_QUAD_X, unscanned_quad_x)
+                    self._write_blackboard(BlackboardDatumType.UNSCANNED_QUAD_Y, unscanned_quad_y)
+        
+        self._is_complete = True  # Mark the action as complete after the galactic record is checked, regardless of results.
+        return
+
+    def isComplete(self):
+        """
+        Return whether this action is complete.
+        :return: True if the action is complete, False otherwise, as boolean.
+        """
+        return self._is_complete
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with completing the check of the galactic record.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with completing the check of the galactic record, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        if isinstance(goal, ExploreGalaxyGoal):
             # Not to be taken literally, but simply to indicated that completing this action will lower
             # the insistence of the FindKlingonShipGoal.
             return -GoalInsistence.HIGH
@@ -356,14 +458,18 @@ class RaiseShieldsAction(StarTrekAction):
             return -GoalInsistence.HIGH
         else:
             return GoalInsistence.ZERO
+ 
         
-
+# TODO: Having the looking_for parameter to __init__ is a bit of a hack, and definitely not OO. It would be better to have separate actions, perhaps.
 class NavigateToQuadrantAction(StarTrekAction):
     """
     Represents an action in a Star Trek game where a player navigates to a specific quadrant.
     """
-    def __init__(self, qx=None, qy=None, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+    def __init__(self, looking_for='klingon', qx=None, qy=None, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
         """
+        :parameter looking_for: The type of quadrant to navigate to, as str.
+            Valid strings are: 'klingon', 'starbase', 'unscanned'.    
+            Determines which location data to look for on the blackboard.
         :param qx: The quadrant x-coordinate [0..7] to navigate to, as int.
         :param qy: The quadrant y-coordinate [0..7] to navigate to, as int.
         :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
@@ -374,6 +480,7 @@ class NavigateToQuadrantAction(StarTrekAction):
             Signature: write_blackboard(key: str, value: any) -> None
         """
         super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
+        self._looking_for = looking_for
         if qx is not None: assert(qx>=0 and qx<=7)
         self.qx = qx
         if qy is not None: assert(qy>=0 and qy<=7)
@@ -410,14 +517,26 @@ class NavigateToQuadrantAction(StarTrekAction):
         # If we don't have target quadrant coordinates, then we need to read them from the blackboard.
         if self.qx is None:
             assert(self._read_blackboard is not None)
-            self.qx = self._read_blackboard(BlackboardDatumType.KLINGON_QUAD_X)
+            match self._looking_for:
+                case 'klingon':
+                    self.qx = self._read_blackboard(BlackboardDatumType.KLINGON_QUAD_X)
+                case 'starbase':
+                    self.qx = self._read_blackboard(BlackboardDatumType.BASE_QUAD_X)    
+                case 'unscanned':
+                    self.qx = self._read_blackboard(BlackboardDatumType.UNSCANNED_QUAD_X)    
         if self.qy is None:
             assert(self._read_blackboard is not None)
-            self.qy = self._read_blackboard(BlackboardDatumType.KLINGON_QUAD_Y)
+            match self._looking_for:
+                case 'klingon':
+                    self.qy = self._read_blackboard(BlackboardDatumType.KLINGON_QUAD_Y)
+                case 'starbase':
+                    self.qy = self._read_blackboard(BlackboardDatumType.BASE_QUAD_Y)    
+                case 'unscanned':
+                    self.qy = self._read_blackboard(BlackboardDatumType.UNSCANNED_QUAD_Y)    
         if self.qx is None or self.qy is None:
             # We don't have target quadrant coordinates, so we cannot navigate
             startrek.print_strings(["NavigateToQuadrantAction Cannot navigate to quadrant: target coordinates not specified."])
-            return
+            raise ActionCannotAchieveGoalError(action=self)
 
         # Make sure we aren't trying to navigate to the same quadrant
         assert(self._world.quadrant_x != self.qx or self._world.quadrant_y != self.qy)

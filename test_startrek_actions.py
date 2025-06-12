@@ -8,7 +8,8 @@ import random
 from game_action import GameActionSequence
 from game_goal import GoalInsistence, GameGoal
 from world_interface import WorldInterface
-from startrek_goals import DestroyKlingonShipGoal, SurviveGoal, FindKlingonShipGoal
+from startrek_goals import DestroyKlingonShipGoal, SurviveGoal, FindKlingonShipGoal, ExploreGalaxyGoal
+from exceptions import ActionCannotAchieveGoalError
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
@@ -220,6 +221,66 @@ class Test_CheckGalacticRecordAction(unittest.TestCase):
         self.assertEqual(exp_val, act_val)
 
 
+class Test_FindUnscannedQuadrantAction(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        startrek.generate_sector()
+        startrek.long_range_scan()
+        self._world = WorldInterface()
+
+    def test_execute(self):
+        seq = GameActionSequence()
+        act = startrek_actions.FindUnscannedQuadrantAction(expiry_time=3, priority=10,
+                                                           read_blackboard=seq.readFromBlackBoard,
+                                                           write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        # Did we get the expected unscanned quadrant?
+        exp_val = (0,0)
+        act_val = (seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.UNSCANNED_QUAD_X),
+                   seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.UNSCANNED_QUAD_Y))
+        self.assertTupleEqual(exp_val, act_val)
+
+    def test_execute_computer_controls_damaged(self):
+        glob_vars.the_game.computer_damage = 1  # Set the computer controls to be damaged.
+        seq = GameActionSequence()
+        act = startrek_actions.FindUnscannedQuadrantAction(expiry_time=3, priority=10,
+                                                           read_blackboard=seq.readFromBlackBoard,
+                                                           write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        # Should not find any klingon ship quadrant of starbbase quandrant info on blackboard
+        self.assertIsNone(seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.UNSCANNED_QUAD_X))
+
+    def test_isComplete_True(self):
+        seq = GameActionSequence()
+        act = startrek_actions.FindUnscannedQuadrantAction(expiry_time=3, priority=10,
+                                                           read_blackboard=seq.readFromBlackBoard,
+                                                           write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        self.assertTrue(act.isComplete())
+
+    def test_isComplete_False(self):
+        act = startrek_actions.FindUnscannedQuadrantAction()
+        self.assertFalse(act.isComplete())
+
+    def test_getGoalChange(self):
+        act = startrek_actions.FindUnscannedQuadrantAction()
+        goal = ExploreGalaxyGoal()
+        exp_val = -GoalInsistence.HIGH
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+    def test_getGoalChange_others(self):
+        act = startrek_actions.FindUnscannedQuadrantAction()
+        goal = GameGoal()
+        exp_val = GoalInsistence.ZERO
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+
 class Test_RaiseShieldsAction(unittest.TestCase):
     def setUp(self):
         random.seed(1234567890)
@@ -352,12 +413,22 @@ class Test_NavigateToQuadrantAction(unittest.TestCase):
         self.assertTupleEqual(exp_val, act_val)
         self.assertFalse(act.isComplete())
 
-    def test_execute_max_attempts_exceeded(self):
+    def test_execute_goal_not_achievable(self):
         seq = GameActionSequence()
         act=startrek_actions.NavigateToQuadrantAction(read_blackboard=seq.readFromBlackBoard,
                                                       write_blackboard=seq.writeToBlackBoard)
         # Since qx and qy are not set, and can't be read from sequence blackbaord, execution will fail,
-        # here on the first attempt.
+        # and raise an exception.
+        self.assertRaises(ActionCannotAchieveGoalError, act.execute)
+
+    def test_execute_max_attempts_exceeded(self):
+        random.seed(1234567890)
+        gm=glob_vars.the_game        
+        startrek.initialize_game()
+        startrek.generate_sector()        
+        act=startrek_actions.NavigateToQuadrantAction(qx=2, qy=6, expiry_time=3, priority=10)
+        # Since qx and qy, as set, will run Enterprise into a star in it's current quadrant,
+        # acton will fail here on the first attempt.
         act.execute()
         self.assertFalse(act.isComplete())
         # Now it will fail on a second attempt.

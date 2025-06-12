@@ -66,9 +66,11 @@ class Gob(object):
     def chooseAction(self):
         """
         Choose the best action based on the current goals and actions.
-        :return: The chosen action, as an instance of GameAction, or None if no action is chosen.
-            Note that the action returned will be a deep copy of the original action. That is, 
-            self._actions is treated as a list of prototypes.
+        :return: Tuple with the following compoments:
+                (1) The chosen action, as an instance of GameAction, or None if no action is chosen.
+                    Note that the action returned will be a deep copy of the original action. That is, 
+                    self._actions is treated as a list of prototypes.
+                (2) The goal that the action is trying to fulfill, as an instance of GameGoal.
         """
         # Find the goal to try and fulfill
         topGoal = self._goals[0]
@@ -87,6 +89,6 @@ class Gob(object):
                 bestAction = action
                 bestUtility = utility
 
-        return deepcopy(bestAction)
+        return (deepcopy(bestAction), topGoal)
 
 

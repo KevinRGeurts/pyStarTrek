@@ -2,7 +2,7 @@
 
 # local imports
 from game_action import GameAction
-from exceptions import ExcessiveRepeatActionScheduleError
+from exceptions import ExcessiveRepeatActionScheduleError, ActionCannotAchieveGoalError
 
 
 class ActionManager(object):
@@ -145,8 +145,14 @@ class ActionManager(object):
                 self._active.remove(action)
             else:
                 # Execute others
-                action.execute()
-
+                try:
+                    action.execute()
+                except ActionCannotAchieveGoalError as e:
+                    # If the action cannot achieve the goal, remove it from the active list
+                    self._active.remove(action)
+                    # And re-raise the exception, so that the caller is notified too
+                    raise e
+    
         return None
 
 
