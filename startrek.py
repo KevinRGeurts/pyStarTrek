@@ -901,7 +901,7 @@ def navigation():
         ret_val.append(i)
     if not possible:
         return ret_val
-    output = _navigation(course, warp_factor)
+    (output, obstacle) = _navigation(course, warp_factor)
     for i in output:
         ret_val.append(i)
     return ret_val
@@ -972,7 +972,9 @@ def _navigation(course, warp_factor):
     Actually navigate the Enterprise.
     :parameter course: Course to navigate, float
     :parameter warp_factor: Warp factor, float
-    :return: List of strings to be printed, e.g., using print_strings()
+    :return: Tuple as follows:
+        (1) List of strings to be printed, e.g., using print_strings()
+        (2) obstacle encountered? True/False
     """
     game=glob_vars.the_game
     ret_val=[] # list of strings
@@ -1080,7 +1082,23 @@ def _navigation(course, warp_factor):
             for i in output:
                 ret_val.append(i)
 
-    return ret_val
+    return (ret_val, obstacle)  # Return the list of strings and whether an obstacle was encountered.
+
+
+# TODO: This function can probably be removed. It was started but not implemented to assist in
+# navigating around an obstacle in a quadrant, but an alternative solution was found.
+def _simulate_navigation_to_find_unobstructed_path(type='quadrant', targ_x=0, targ_y=0):
+    """
+    Simulate navigation to find an unobstructed path to a given quadrant or sector.
+    :parameter type: Type of location to navigate to, either 'quadrant' or 'sector', string
+    :parameter targ_x: X-coordinate of the target sector or quadrant, int [0-7]
+    :parameter targ_y: Y-coordinate of the target sector or quadrant, int [0-7]
+    :return: Tuple (free_x, free_y) where free_x and free_y are the coordinates a sector in the quadrant
+                from which the Enterprise can navigate successfully to the target quadrant or sector.
+    """
+    free_x = targ_x
+    free_y = targ_y
+    return (free_x, free_y)
 
 
 def generate_sector():

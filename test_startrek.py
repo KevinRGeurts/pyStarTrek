@@ -12,6 +12,7 @@ from startrek import phaser_controls, sector_type, generate_sector, read_sector
 from startrek import short_range_scan, is_docking_location, is_sector_region_empty, print_mission
 from startrek import print_sector_row, print_sector, long_range_scan, run, _torpedo_control_precheck, _torpedo_controls_input
 from startrek import _torpedo_control_launch, _shield_controls_precheck
+from startrek import _navigation
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
 # TODO: Consider factoring out some common setup, like initize_game(), generate_sector(), and separate the tests that
@@ -1778,6 +1779,25 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
+    def test_under_navigation_obstacle(self):
+        random.seed(1234567890)
+        gm=glob_vars.the_game
+        initialize_game()
+        generate_sector()
+        (output, obstacle)=_navigation(3, 0.3)
+        exp_val = True
+        act_val = obstacle
+        self.assertEqual(exp_val, act_val)
+
+    def test_under_navigation_no_obstacle(self):
+        random.seed(1234567890)
+        gm=glob_vars.the_game
+        initialize_game()
+        generate_sector()
+        (output, obstacle)=_navigation(1, 0.3)
+        exp_val = False
+        act_val = obstacle
+        self.assertEqual(exp_val, act_val)
         
     def test_is_sector_region_empty(self):
         random.seed(1234567890)

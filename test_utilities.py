@@ -6,7 +6,126 @@ import sys
 
 # local imports
 from utilities import input_double, print_strings, compute_direction, distance, input_double
+from utilities import StarTrekCourse
 from strings import computerStrings
+
+
+class Test_StarTrekCourse(unittest.TestCase):
+    def test_sub_no_wrap_course_course(self):
+        course1 = StarTrekCourse(3.0)
+        course2 = StarTrekCourse(1.0)
+        exp_val = 2.0
+        act_val = (course1 - course2).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_sub_no_wrap_course_int(self):
+        course1 = StarTrekCourse(3.0)
+        course2 = 1
+        exp_val = 2.0
+        act_val = (course1 - course2).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_sub_no_wrap_int_course(self):
+        course1 = StarTrekCourse(3.0)
+        course2 = 1
+        exp_val = 2.0
+        act_val = (course2 - course1).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_sub_no_wrap_course_float(self):
+        course1 = StarTrekCourse(3.0)
+        course2 = 1.0
+        exp_val = 2.0
+        act_val = (course1 - course2).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_add_no_wrap_float_course(self):
+        course1 = StarTrekCourse(3.0)
+        course2 = 1.0
+        exp_val = 2.0
+        act_val = (course2 - course1).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_sub_wrap(self):
+        course1 = StarTrekCourse(3.0)
+        course2 = StarTrekCourse(5.0)
+        exp_val = 6.0
+        act_val = (course1 - course2).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_add_no_wrap_course_course(self):
+        course1 = StarTrekCourse(2.0)
+        course2 = StarTrekCourse(3.0)
+        exp_val = 5.0
+        act_val = (course1 + course2).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_add_no_wrap_course_int(self):
+        course1 = StarTrekCourse(2.0)
+        course2 = 3
+        exp_val = 5.0
+        act_val = (course1 + course2).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_add_no_wrap_int_course(self):
+        course1 = StarTrekCourse(2.0)
+        course2 = 3
+        exp_val = 5.0
+        act_val = (course2 + course1).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_add_no_wrap_course_float(self):
+        course1 = StarTrekCourse(2.0)
+        course2 = 3.0
+        exp_val = 5.0
+        act_val = (course1 + course2).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_add_no_wrap_float_course(self):
+        course1 = StarTrekCourse(2.0)
+        course2 = 3.0
+        exp_val = 5.0
+        act_val = (course2 + course1).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_add_wrap(self):
+        course1 = StarTrekCourse(7.0)
+        course2 = StarTrekCourse(3.0)
+        exp_val = 1.0
+        act_val = (course1 + course2).direction
+        self.assertEqual(exp_val, act_val)
+
+    def test_add_NotImplemented(self):
+        course1 = StarTrekCourse(7.0)
+        course2 = []  # Not a StarTrekCourse instance
+        exp_val = NotImplemented
+        act_val = course1.__add__(course2)
+        self.assertEqual(exp_val, act_val)
+
+    def test_repr(self):
+        course = StarTrekCourse(5.0)
+        exp_val = "StarTrekCourse(direction=5.0)"
+        act_val = repr(course)
+        self.assertEqual(exp_val, act_val)
+
+    def test_str(self):
+        course = StarTrekCourse(5.0)
+        exp_val = "5.0"
+        act_val = str(course)
+        self.assertEqual(exp_val, act_val)
+
+    def test_int(self):
+        course = StarTrekCourse(5.0)
+        exp_val = 5
+        act_val = int(course)
+        self.assertEqual(exp_val, act_val)
+
+    def test_float(self):
+        course = StarTrekCourse(5)
+        exp_val = 5.0
+        act_val = float(course)
+        self.assertEqual(exp_val, act_val)
+    
 
 
 class Test_utilities(unittest.TestCase):

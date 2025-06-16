@@ -62,6 +62,9 @@
     <Compile Include="startrek_goals.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="star_trek_exceptions.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="strings.py" />
     <Compile Include="test_gob.py">
       <SubType>Code</SubType>

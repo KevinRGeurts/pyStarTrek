@@ -6,6 +6,7 @@ from math import exp
 from game_action import GameAction, GameActionSequence
 from game_goal import GameGoal, GoalInsistence
 from startrek_goals import DestroyKlingonShipGoal, ExploreGalaxyGoal, SurviveGoal, FindKlingonShipGoal
+from utilities import StarTrekCourse
 from world_interface import WorldInterface
 from exceptions import ActionCannotAchieveGoalError
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
@@ -418,7 +419,7 @@ class RaiseShieldsAction(StarTrekAction):
                 return
             else:
                 # Add to shield energy
-                output = startrek._shield_controls_adjust(True, self._shield_energy)
+                output = startrek._shield_controls_adjust(True, self._shield_energy - current_shields)
                 startrek.print_strings(output)
         # Are we trying to decrease shield energy?
         else:
@@ -543,14 +544,33 @@ class NavigateToQuadrantAction(StarTrekAction):
 
         # Navigate to target quadrant
         print(f"NavigateToQuadrantAction Navigating to quadrant ({self.qx+1}, {self.qy+1}).")
+
         # Determine distance to target quadrant
         dist = startrek.distance(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
         # Determine direction to target quadrant
         direction = startrek.compute_direction(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
         # Perform navigation
-        # TODO: Handle hitting an obstacle leaving current quadrant
-        output = startrek._navigation(direction, dist)
+        (output, obstacle) = startrek._navigation(direction, dist)
         startrek.print_strings(output)
+
+        while obstacle:
+
+            # Try to steer away from obstacle, by turning 45 degrees to the left, and navigating
+            # 1 sector forward in that direction. 
+            direction = float(StarTrekCourse(direction) + 1.0)  # Turn left by 45 degrees
+            dist = 0.1 # A distance of 1 sector
+            (output, obstacle) = startrek._navigation(direction, dist)
+            startrek.print_strings(output)
+            assert(not obstacle)  # We should not hit an obstacle after turning left and moving forward.)
+
+            # Now, reattempt navigation to the target quadrant.
+            # Determine distance to target quadrant
+            dist = startrek.distance(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
+            # Determine direction to target quadrant
+            direction = startrek.compute_direction(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
+            # Perform navigation
+            (output, obstacle) = startrek._navigation(direction, dist)
+            startrek.print_strings(output)
 
         return None
 

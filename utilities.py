@@ -8,6 +8,72 @@ from math import atan2, pi, sqrt
 # local imports
 
 
+class StarTrekCourse:
+    """
+    This class represents a course (direction) in the Star Trek game.
+    Note: Course is defined as follows: [1.0-9.0], 1=right,3=up,5=left,7=down
+    """
+    def __init__(self, direction=1.0):
+        """
+        :parameter direction: The direction of the course, as float.
+        Note: Direction is defined as follows: [1.0-9.0], 1=right,3=up,5=left,7=down
+        """
+        self.direction = direction
+
+    @property
+    def direction(self):
+        """
+        Get the direction of the course.
+        :return: The direction as a float
+        Note: Direction is defined as follows: [1.0-9.0], 1=right,3=up,5=left,7=down
+        """
+        return self._direction
+
+    @direction.setter
+    def direction(self, direction):
+        """
+        Set the direction of the course.
+        :parameter direction: The direction of the course, as float.
+        Note: Direction is defined as follows: [1.0-9.0], 1=right,3=up,5=left,7=down
+        """
+        assert(1.0 <= direction <= 9.0)
+        self._direction = direction
+
+    def __repr__(self):
+        return f"StarTrekCourse(direction={self.direction})"
+
+    def __str__(self):
+        return str(float(self.direction))
+        
+    def __int__(self):
+        return int(self.direction)
+
+    def __float__(self):
+        return float(self.direction)
+
+    def __add__(self, other):
+        if not isinstance(other, (StarTrekCourse, float, int)):
+            return NotImplemented
+        result = float(self) + float(other)
+        if result > 9.0:
+            result -= 9.0 
+        return StarTrekCourse(result)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        if not isinstance(other, (StarTrekCourse, float, int)):
+            return NotImplemented
+        result = float(self) - float(other)
+        if result <= 1.0:
+            result = 8.0 + result 
+        return StarTrekCourse(result)
+
+    def __rsub__(self, other):
+        return self.__sub__(other)
+
+
 def print_strings(string_list):
     """
     Iterate through a list of strings and print each string.
