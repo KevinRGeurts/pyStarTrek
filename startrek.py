@@ -74,14 +74,14 @@ def play_ai_game():
     gob.add_goal(startrek_goals.DestroyKlingonShipGoal())
     gob.add_goal(startrek_goals.ExploreGalaxyGoal())
     # Create the possible actions for the Star Trek game.
-    act1=startrek_actions.FindKlingonShipAction(expiry_time=10, priority=10)
-    gob.add_action(act1)
-    act2=startrek_actions.RaiseShieldsAction(expiry_time=10, priority=10, shield_energy=500)
-    gob.add_action(act2)
-    act3=startrek_actions.LaunchPhotonTorpedoAction(expiry_time=10, priority=10)
-    gob.add_action(act3)
-    act4=startrek_actions.ExploreUnknownRegionAction(expiry_time=10, priority=10)
-    gob.add_action(act4)
+    find_K_act=startrek_actions.FindKlingonShipAction(expiry_time=10, priority=10)
+    gob.add_action(find_K_act)
+    shield_act=startrek_actions.RaiseShieldsAction(expiry_time=10, priority=10, shield_energy=500)
+    gob.add_action(shield_act)
+    attack_act=startrek_actions.AttackKlingonShipAction(expiry_time=10, priority=10)
+    gob.add_action(attack_act)
+    explore_act=startrek_actions.ExploreUnknownRegionAction(expiry_time=10, priority=10)
+    gob.add_action(explore_act)
     
     mgr = ActionManager()
     
@@ -104,6 +104,8 @@ def play_ai_game():
         try:
             while len(mgr) > 0:
                 mgr.execute()
+                if game.destroyed or game.energy == 0 or game.klingons == 0 or game.time_remaining == 0:
+                    break
         except ActionCannotAchieveGoalError as e:
             # TODO: Need to have the Gob also return from chooseAction() the goal that was selected.
             # Then temporarily remove that goal from the Gob, so that it is not selected again, immediately.
@@ -430,7 +432,7 @@ def _phaser_controls_fire(phaser_energy):
     """
     Actually fire the phasers.
     :parameter phaser_energy: Amount of energy to fire phasers with, float
-    :return: Tuple (List of strings to be printed, Numnber of destroyed klingon ships), as type
+    :return: Tuple (List of strings to be printed, Numnber of destroyed klingon ships, as int)
     """
     game=glob_vars.the_game
     ret_val=[] # list of strings
@@ -769,7 +771,7 @@ def torpedo_control():
         ret_val.append(i)
     if not possible:
         return ret_val
-    output = _torpedo_control_launch(direction)
+    (output, captured, missed) = _torpedo_control_launch(direction)
     for i in output:
         ret_val.append(i)
     return ret_val
@@ -818,11 +820,14 @@ def _torpedo_control_launch(direction):
     """
     Actually launch the torpedo.
     :parameter direction: Direction in which to fire the torpedo, float
-    :return: List of strings to be printed, e.g., using print_strings()
+    :return: Tupe (List of strings to be printed, e.g., using print_strings(),
+                   Torpedo captured by star True/False, as boolean,
+                   Torpedo missed everything True/False, as boolean)
     Note: It is possible for torpedo to miss, even if it is fired in the direction of a Klingon ship,
             because there is a 1-in-3 chance of the torpedo being fired off-course by a random small amount.
     """
     game=glob_vars.the_game
+    captured = False
     ret_val=[] # list of strings
     ret_val.append("")
     ret_val.append("Photon torpedo fired...")
@@ -868,6 +873,7 @@ def _torpedo_control_launch(direction):
                 new_x + 1, new_y + 1
             ))
             hit = True
+            captured = True
             break
         x += vx
         y += vy
@@ -879,7 +885,7 @@ def _torpedo_control_launch(direction):
         for i in output:
             ret_val.append(i)
     ret_val.append("")
-    return ret_val
+    return (ret_val, captured, not hit)
 
 
 def navigation():

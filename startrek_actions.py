@@ -22,7 +22,9 @@ class BlackboardDatumType(StrEnum):
     BASE_QUAD_X = 'base_quad_x'
     BASE_QUAD_Y = 'base_quad_y'
     UNSCANNED_QUAD_X = 'unscanned_quad_x'
-    UNSCANNED_QUAD_Y = 'unscanned_quad_y'    
+    UNSCANNED_QUAD_Y = 'unscanned_quad_y'
+    FIRE_PHASERS = 'fire_phasers'
+
 
 class StarTrekAction(GameAction):
     """
@@ -72,6 +74,21 @@ class FindKlingonShipAction(GameActionSequence):
         nav_act = NavigateToQuadrantAction(read_blackboard=self.readFromBlackBoard,
                                            write_blackboard=self.writeToBlackBoard)
         super().__init__(expiry_time, priority, seq_acts=[scan_act, rec_act, nav_act])
+
+
+class AttackKlingonShipAction(GameActionSequence):
+    """
+    Represents a sequence of actions in a Star Trek game where a player attacks a Klingon ship.
+    :param expiry_time: The time in an arbitrary count-up from zero until the action sequence expires, as int.
+    :param priority: The priority of the action sequence. Higher numbers indicate higher priority. As int.
+    """
+    def __init__(self, expiry_time=0, priority=0):
+        torp_act = LaunchPhotonTorpedoAction(read_blackboard=self.readFromBlackBoard,
+                                             write_blackboard=self.writeToBlackBoard)
+        phas_act = FirePhasersAction(phaser_energy=500,
+                                     read_blackboard=self.readFromBlackBoard,
+                                     write_blackboard=self.writeToBlackBoard)
+        super().__init__(expiry_time, priority, seq_acts=[torp_act, phas_act])
 
 
 class LongRangeScanAction(StarTrekAction):
@@ -554,7 +571,7 @@ class NavigateToQuadrantAction(StarTrekAction):
         startrek.print_strings(output)
 
         while obstacle:
-
+            print(f"NavigateToQuadrantAction Navigating around obstacle near ({self._world.sector_x+1}, {self._world.sector_x+1}).")
             # Try to steer away from obstacle, by turning 45 degrees to the left, and navigating
             # 1 sector forward in that direction. 
             direction = float(StarTrekCourse(direction) + 1.0)  # Turn left by 45 degrees
@@ -614,11 +631,21 @@ class LaunchPhotonTorpedoAction(StarTrekAction):
         :return: None
         """
         
+        # Note: We will mark the action complete, if and only if:
+        # (1) We launch a torpoedo that does not miss, or
+        # (2) We can't launch a torpedo, but we can write to the blackboard that phasers should be fired.
+        # We do not want to mark the action complete if we launched a torpedo which simply missed, since that
+        # can happen with random chance, and we want to try launching a torpedo again. 
+
         # Check if torpedo control is damaged or if we are out of torpedoes.
         (possible, output) = startrek._torpedo_control_precheck()
         if not possible:
             # Torpedo control is damaged, or we are out of torpedoes, and cannot launch a photon torpedo
             startrek.print_strings(output)
+            if self._write_blackboard is not None:
+                # If we can't launch a photon torpedo, write to the blackboard that phasers should be fired.
+                self._write_blackboard(BlackboardDatumType.FIRE_PHASERS, True)
+                self._is_complete = True
             return
         # Determine firing direction for torpedo
         target = self._world.klingon_ships[0]
@@ -626,9 +653,13 @@ class LaunchPhotonTorpedoAction(StarTrekAction):
                                                target.sector_x, target.sector_y)
         print(f"LaunchPhotonTorpedoAction Launching photon torpedo at Klingon ship in sector ({target.sector_x+1},{target.sector_y+1}).")
         # Fire the torpedo
-        output = startrek._torpedo_control_launch(direction)
+        (output, captured, missed) = startrek._torpedo_control_launch(direction)
+        if not missed:
+            self._is_complete = True
         startrek.print_strings(output)
-        self._is_complete = True
+        if self._write_blackboard is not None:
+            # If the torpedo was captured by a star, write to the blackboard that phasers should be fired.
+            self._write_blackboard(BlackboardDatumType.FIRE_PHASERS, captured)
         return None
 
     def isComplete(self):
@@ -641,6 +672,75 @@ class LaunchPhotonTorpedoAction(StarTrekAction):
     def getGoalChange(self, goal=None):
         """
         Return the goal insistence change associated with launching a photon torpedo.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with navigating to the target quadrant, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        if isinstance(goal, DestroyKlingonShipGoal):
+            # Not to be taken literally, but simply to indicated that completing this action
+            # to lauch a photon torpedo will lower the insistence of the DestoryKlingonShipGoal.
+            return -GoalInsistence.HIGH
+        else:
+            return GoalInsistence.ZERO
+
+
+class FirePhasersAction(StarTrekAction):
+    """
+    Represents an action in a Star Trek game where a player fires phasers.
+    """
+    def __init__(self, phaser_energy=0, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+        """
+        Initialize the fire phasers action object.
+        :param phaser_energy: The desired energy level for the phasers, as int.
+        :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
+        :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
+        """
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
+        self._phaser_energy = phaser_energy
+        self._is_complete = False
+
+    def execute(self):
+        """
+        Execute the fire phasers action.
+        :return: None
+        """
+
+        if self._read_blackboard is not None:
+            if not self._read_blackboard(BlackboardDatumType.FIRE_PHASERS):
+                # If the blackboard indicates that we should not fire phasers, then we do not.
+                self._is_complete = True
+                print("FirePhasersAction Not firing phasers: blackboard indicates not to fire.")
+                return
+        
+        # Check if phaser control is damaged or if we are out of torpedoes.
+        (possible, output) = startrek._phaser_control_precheck()
+        if not possible:
+            # Phaser control is damaged. Phasers cannot be fired.
+            startrek.print_strings(output)
+            return
+        # Determine how many Klingon ships are in the current quadrant
+        num_targets = len(self._world.klingon_ships)
+        print(f"FirePhasersAction Firing phasers with energy level {self._phaser_energy} at {num_targets} Klingon ships in quadrant.")
+        # Fire the phasers
+        (output, num_destroyed) = startrek._phaser_controls_fire(self._phaser_energy)
+        startrek.print_strings(output)
+        self._is_complete = num_destroyed >= num_targets  # If we destroyed all targets, the action is complete.
+        return None
+
+    def isComplete(self):
+        """
+        Return whether this action is complete.
+        :return: True if the action is complete, False otherwise, as boolean.
+        """
+        return self._is_complete
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with firing phasers.
         :param goal: The goal to check against, as GameGoal object.
         :return: The goal insistence change associated with navigating to the target quadrant, as int.
         """

@@ -15,7 +15,54 @@ import startrek # Leave this import like this exactly, so that a circle import i
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
 
-class LaunchPhotonTorpedoAction(unittest.TestCase):
+class Test_FirePhasersAction(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        startrek.generate_sector()
+        self._world = WorldInterface()
+    
+    def test_execute_no_klingon_ship(self):
+        act = startrek_actions.FirePhasersAction(phaser_energy=100, expiry_time=3, priority=10)
+        act.execute()
+        self.assertFalse(act.isComplete())
+
+    def test_execute_phaser_control_damaged(self):
+        glob_vars.the_game.phaser_damage = 5
+        # Navigate to quadrant with klingon ship
+        nav_action = startrek_actions.FindKlingonShipAction()
+        while not nav_action.isComplete(): 
+            nav_action.execute()
+        # Attempt to fire phasers
+        fire = startrek_actions.FirePhasersAction(phaser_energy=100, expiry_time=3, priority=10)
+        fire.execute()
+        self.assertFalse(fire.isComplete())
+
+    def test_execute(self):
+        # Navigate to quadrant with klingon ship
+        nav_action = startrek_actions.FindKlingonShipAction()
+        while not nav_action.isComplete(): 
+            nav_action.execute()
+        fire = startrek_actions.FirePhasersAction(phaser_energy=1000, expiry_time=3, priority=10)
+        fire.execute()
+        self.assertTrue(fire.isComplete())
+
+    def test_getGoalChange(self):
+        act = startrek_actions.FirePhasersAction()
+        goal = DestroyKlingonShipGoal()
+        exp_val = -GoalInsistence.HIGH
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+    def test_getGoalChange_others(self):
+        act = startrek_actions.FirePhasersAction()
+        goal = GameGoal()
+        exp_val = GoalInsistence.ZERO
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+
+class Test_LaunchPhotonTorpedoAction(unittest.TestCase):
     def setUp(self):
         random.seed(1234567890)
         startrek.initialize_game()
@@ -71,6 +118,49 @@ class LaunchPhotonTorpedoAction(unittest.TestCase):
         exp_val = GoalInsistence.ZERO
         act_val = act.getGoalChange(goal)
         self.assertEqual(exp_val, act_val)
+
+
+class Test_AttackKlingonShipAction(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        startrek.generate_sector()
+        self._world = WorldInterface()
+
+    def test_execute_torpedo(self):
+        # First, we need to find and navigate to a quadrant with a klingon ship.
+        seq=startrek_actions.FindKlingonShipAction(expiry_time=3, priority=10)
+        while not seq.isComplete(): 
+            seq.execute()
+        # Have we arrived at a quadrant with a klingon ship?
+        self.assertTrue(len(self._world.klingon_ships) > 0)
+        # Now we can attack the klingon ship. Should result in torpedo launch.
+        num_torp = self._world.photon_torpedoes
+        seq = startrek_actions.AttackKlingonShipAction(expiry_time=3, priority=10)
+        while not seq.isComplete():
+            seq.execute()
+        # Is the klingon ship destroyed?
+        self.assertTrue(len(self._world.klingon_ships) == 0)
+        # Was a photon torpedo launched?
+        self.assertTrue(self._world.photon_torpedoes == num_torp - 1)
+
+    def test_execute_phasers(self):
+        glob_vars.the_game.photon_torpedoes = 0  # Set photon torpedoes to 0.
+        # First, we need to find and navigate to a quadrant with a klingon ship.
+        seq=startrek_actions.FindKlingonShipAction(expiry_time=3, priority=10)
+        while not seq.isComplete(): 
+            seq.execute()
+        # Have we arrived at a quadrant with a klingon ship?
+        self.assertTrue(len(self._world.klingon_ships) > 0)
+        # Now we can attack the klingon ship. Should result in phaser fire (2 times)
+        ship_energy_before = self._world.energy
+        seq = startrek_actions.AttackKlingonShipAction(expiry_time=3, priority=10)
+        while not seq.isComplete():
+            seq.execute()
+        # Is the klingon ship destroyed?
+        self.assertTrue(len(self._world.klingon_ships) == 0)
+        # Is ship's energy reduced by amount of phaser energy used?
+        self.assertTrue((ship_energy_before - self._world.energy) == 1000)
 
 
 class Test_FindKlingonShipAction(unittest.TestCase):

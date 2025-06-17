@@ -1,4 +1,5 @@
 # standard imports
+from calendar import c
 import unittest
 import random
 import sys
@@ -2017,7 +2018,6 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertTupleEqual(exp_val, act_val)
 
-
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result issuing 3 invalid torpedo directions ['foo', 9.1, 0.9]
     @patch('sys.stdin', StringIO('foo\n9.1\n0.9\n'))
@@ -2040,7 +2040,6 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertTupleEqual(exp_val, act_val)
 
-
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in raising shields and then navigating to a sector with a klingon.
     @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n5\n1\n'))
@@ -2062,9 +2061,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val.append("Enterprise hit by ship at sector [5,1]. Shields dropped to 320.")
         exp_val.append('')
         # Launch torpedo that will hit a star
-        act_val = _torpedo_control_launch(3.5)
+        (act_val, captured, missed) = _torpedo_control_launch(3.5)
         self.assertEqual(exp_val, act_val)
-
+        self.assertTrue(captured)  # The torpedo was captured by the star's gravity
+        self.assertFalse(missed)
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in raising shields and then navigating to a sector with a klingon and a starbase
@@ -2090,9 +2090,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val.append("Enterprise hit by ship at sector [5,1]. Shields dropped to 320.")
         exp_val.append('')
         # Launch torpedo that will hit a starbase
-        act_val = _torpedo_control_launch(8.5)
+        (act_val, captured, missed) = _torpedo_control_launch(8.5)
         self.assertEqual(exp_val, act_val)
-
+        self.assertFalse(captured)
+        self.assertFalse(missed)
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in raising shields and then navigating to a sector with a klingon and a starbase
@@ -2116,9 +2117,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val.append("Klingon ship destroyed at sector [5,1].")
         exp_val.append('')
         # Launch torpedo that will hit a klingon
-        act_val = _torpedo_control_launch(2.69)
+        (act_val, captured, missed) = _torpedo_control_launch(2.69)
         self.assertEqual(exp_val, act_val)
-
+        self.assertFalse(captured)
+        self.assertFalse(missed)
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in raising shields and then navigating to a sector with a klingon and a starbase
@@ -2141,8 +2143,10 @@ class Test_test_startrek(unittest.TestCase):
         exp_val.append("Enterprise hit by ship at sector [5,1]. Shields dropped to 320.")
         exp_val.append('')
         # Launch torpedo that will hit nothing
-        act_val = _torpedo_control_launch(7)
+        (act_val, captured, missed) = _torpedo_control_launch(7)
         self.assertEqual(exp_val, act_val)
+        self.assertFalse(captured)
+        self.assertTrue(missed)
 
     def test_shields_precheck_damaged(self):
         gm=glob_vars.the_game

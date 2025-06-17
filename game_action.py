@@ -18,12 +18,12 @@ class GameAction(object):
         """
         self._expiry_time=expiry_time
         self._priority=priority
+        self._read_blackboard = read_blackboard
         if read_blackboard:
             assert(callable(read_blackboard))
-            self._read_blackboard = read_blackboard
+        self._write_blackboard = write_blackboard
         if write_blackboard:
             assert(callable(write_blackboard))
-            self._write_blackboard = write_blackboard
 
     @property
     def expiry_time(self):
