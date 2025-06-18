@@ -6,6 +6,7 @@ from math import exp
 from game_action import GameAction, GameActionSequence
 from game_goal import GameGoal, GoalInsistence
 from startrek_goals import DestroyKlingonShipGoal, ExploreGalaxyGoal, SurviveGoal, FindKlingonShipGoal
+from startrek_goals import RepairResuplyEnterpriseGoal
 from utilities import StarTrekCourse
 from world_interface import WorldInterface
 from exceptions import ActionCannotAchieveGoalError
@@ -21,6 +22,8 @@ class BlackboardDatumType(StrEnum):
     KLINGON_QUAD_Y = 'klingon_quad_y'
     BASE_QUAD_X = 'base_quad_x'
     BASE_QUAD_Y = 'base_quad_y'
+    BASE_SECT_X = 'base_sect_x'
+    BASE_SECT_Y = 'base_sect_y'
     UNSCANNED_QUAD_X = 'unscanned_quad_x'
     UNSCANNED_QUAD_Y = 'unscanned_quad_y'
     FIRE_PHASERS = 'fire_phasers'
@@ -74,6 +77,29 @@ class FindKlingonShipAction(GameActionSequence):
         nav_act = NavigateToQuadrantAction(read_blackboard=self.readFromBlackBoard,
                                            write_blackboard=self.writeToBlackBoard)
         super().__init__(expiry_time, priority, seq_acts=[scan_act, rec_act, nav_act])
+
+
+class FindStarbaseAction(GameActionSequence):
+    """
+    Represents a sequence of actions in a Star Trek game where a player scans and checks the galactic record
+    to find a quadrant with a starbase, and then navigates to that quadrant. Then a short range scan is
+    performed to find the starbase, and then the Enterprise is navigated to dock with the starbase.
+    :param expiry_time: The time in an arbitrary count-up from zero until the action sequence expires, as int.
+    :param priority: The priority of the action sequence. Higher numbers indicate higher priority. As int.
+    """
+    def __init__(self, expiry_time=0, priority=0):
+        long_scan_act = LongRangeScanAction(read_blackboard=self.readFromBlackBoard,
+                                       write_blackboard=self.writeToBlackBoard)
+        rec_act = CheckGalacticRecordAction(read_blackboard=self.readFromBlackBoard,
+                                            write_blackboard=self.writeToBlackBoard)
+        nav_act = NavigateToQuadrantAction(looking_for='starbase',
+                                           read_blackboard=self.readFromBlackBoard,
+                                           write_blackboard=self.writeToBlackBoard)
+        short_scan_act = ShortRangeScanAction(read_blackboard=self.readFromBlackBoard,
+                                              write_blackboard=self.writeToBlackBoard)
+        dock_act = DockWithStarbaseAction(read_blackboard=self.readFromBlackBoard,
+                                          write_blackboard=self.writeToBlackBoard)
+        super().__init__(expiry_time, priority, seq_acts=[long_scan_act, rec_act, nav_act, short_scan_act, dock_act])
 
 
 class AttackKlingonShipAction(GameActionSequence):
@@ -190,6 +216,76 @@ class LongRangeScanAction(StarTrekAction):
         """
         assert(isinstance(goal, GameGoal))
         if isinstance(goal, FindKlingonShipGoal):
+            # Not to be taken literally, but simply to indicated that completing this action will lower
+            # the insistence of the FindKlingonShipGoal.
+            return -GoalInsistence.HIGH
+        else:
+            return GoalInsistence.ZERO
+
+
+class ShortRangeScanAction(StarTrekAction):
+    """
+    Represents an action in a Star Trek game where a player performs a short-range scan of the quadrant
+    with intent to find a Starbase.
+    """
+    def __init__(self, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+        """
+        :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
+        :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
+        """
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
+        self._is_complete = False
+    
+    def execute(self):
+        """
+        Execute the short range scan action.
+        :return: None
+        """
+        if self._world.short_range_scan_damage > 0:
+            # Short range scanner is damaged, and cannot be used
+            startrek.print_strings(["Short range scanner is damaged, and cannot be used."])
+            return
+
+        # Just fetch the starbase location directly from the world interface.
+        base_sect_x = -1
+        base_sect_y = -1
+
+        try:
+            base_sect_x = self._world.starbase_x 
+            base_sect_y = self._world.starbase_y
+        except AssertionError:
+            # No starbase in the current quadrant, so no coordinates to write to blackboard.
+            pass
+
+        # Write starbase coordinates to blackboard, if we have one
+        if base_sect_x >= 0 and base_sect_y >= 0:
+            print(f"ShortRangeScanAction found starbase at quadrant ({base_sect_x+1}, {base_sect_y+1}).")
+            if self._write_blackboard is not None:
+                self._write_blackboard(BlackboardDatumType.BASE_SECT_X, base_sect_x)
+                self._write_blackboard(BlackboardDatumType.BASE_SECT_Y, base_sect_y)
+        
+        self._is_complete = True  # Mark the action as complete after the scan is executed, regardless of results.
+        return
+
+    def isComplete(self):
+        """
+        Return whether this action is complete.
+        :return: True if the action is complete, False otherwise, as boolean.
+        """
+        return self._is_complete
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with completing the long range scan.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with completing the long range scan, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        if isinstance(goal, RepairResuplyEnterpriseGoal):
             # Not to be taken literally, but simply to indicated that completing this action will lower
             # the insistence of the FindKlingonShipGoal.
             return -GoalInsistence.HIGH
@@ -748,6 +844,127 @@ class FirePhasersAction(StarTrekAction):
         if isinstance(goal, DestroyKlingonShipGoal):
             # Not to be taken literally, but simply to indicated that completing this action
             # to lauch a photon torpedo will lower the insistence of the DestoryKlingonShipGoal.
+            return -GoalInsistence.HIGH
+        else:
+            return GoalInsistence.ZERO
+
+
+class DockWithStarbaseAction(StarTrekAction):
+    """
+    Represents an action in a Star Trek game where a player navigates within a sector to dock with a starbase.
+    """
+    def __init__(self, sx=None, sy=None, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+        """
+        :param sx: The sector x-coordinate [0..7] to navigate to, as int.
+        :param sy: The sector y-coordinate [0..7] to navigate to, as int.
+        :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
+        :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
+        """
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
+        if sx is not None: assert(sx>=0 and sx<=7)
+        self.sx = sx
+        if sy is not None: assert(sy>=0 and sy<=7)
+        self.sy = sy
+        # How many times have we attempted to navigate to the target sector?
+        self._attempts = 0
+        self._max_attempts = 2  # If we attempt to navigate to the same sector too many times, we'll give up.
+
+    def isComplete(self):
+        """
+        Return whether this action is complete.
+        :return: True if the action is complete, False otherwise, as boolean.
+        """
+        # Check if the current game sector matches the target sector, or if we are docked with starbase.
+        # If either is so, then navigation was successful, and the action is complete. Note that docking with
+        # starbase halts Enterprise at an adjacent sector, not at the starbase sector.
+        if self._world.sector_x == self.sx and self._world.sector_y == self.sy:
+            # Navigation was successful
+            return True
+        elif self._world.docked:
+            # We are docked with the starbase, so we are done.
+            return True
+        elif self._attempts > self._max_attempts:
+            # If we have attempted to navigate to the target sector too many times, then we give up.
+            startrek.print_strings(["DockWithStarbaseAction failed: too many attempts to navigate to the same sector."])
+            return True
+        else:
+            return False
+
+    def execute(self):
+        """
+        Execute the navigation action.
+        :return: None
+        """
+
+        self._attempts += 1
+
+        # If we don't have target sector coordinates, then we need to read them from the blackboard.
+        if self.sx is None:
+            assert(self._read_blackboard is not None)
+            self.sx = self._read_blackboard(BlackboardDatumType.BASE_SECT_X)    
+        if self.sy is None:
+            assert(self._read_blackboard is not None)
+            self.sy = self._read_blackboard(BlackboardDatumType.BASE_SECT_Y)    
+        if self.sx is None or self.sy is None:
+            # We don't have target sector coordinates, so we cannot navigate
+            startrek.print_strings(["DockWithStarbaseAction Cannot navigate to sector: target coordinates not specified."])
+            raise ActionCannotAchieveGoalError(action=self)
+
+        # Make sure we aren't trying to navigate to the same sector
+        assert(self._world.sector_x != self.sx or self._world.sector_y != self.sy)
+
+        # Navigate to target sector
+        print(f"DockWithStarbaseAction Navigating to sector ({self.sx+1}, {self.sy+1}).")
+
+        # Determine distance to target sector
+        # TODO: Investigate HACK of adding (1.0/8.0) to the distance. Without this, were always
+        # coming up one sector short of the target sector. Suspect this could be compensating for a bug
+        # in the startrek module's _navigation function.
+        dist = startrek.distance(self._world.sector_x, self._world.sector_y, self.sx, self.sy) / 8.0 + (1.0/8.0)
+        # Determine direction to target sector
+        direction = startrek.compute_direction(self._world.sector_x, self._world.sector_y, self.sx, self.sy)
+        # Perform navigation
+        (output, obstacle) = startrek._navigation(direction, dist)
+        startrek.print_strings(output)
+
+        while obstacle:
+            print(f"DockWithStarbaseAction Navigating around obstacle near ({self._world.sector_x+1}, {self._world.sector_x+1}).")
+            # Try to steer away from obstacle, by turning 45 degrees to the right, and navigating
+            # 1 sector forward in that direction. 
+            direction = float(StarTrekCourse(direction) - 1.0)  # Turn right by 45 degrees
+            dist = 0.1 # A distance of 1 sector
+            (output, obstacle) = startrek._navigation(direction, dist)
+            startrek.print_strings(output)
+            assert(not obstacle)  # We should not hit an obstacle after turning right and moving forward.)
+
+            # Now, reattempt navigation to the target sector.
+            # Determine distance to target sector
+            # TODO: Investigate HACK of adding (1.0/8.0) to the distance. Without this, were always
+            # coming up one sector short of the target sector. Suspect this could be compensating for a bug
+            # in the startrek module's _navigation function.
+            dist = startrek.distance(self._world.sector_x, self._world.sector_y, self.sx, self.sy) / 8.0 + (1.0/8.0)
+            # Determine direction to target sector
+            direction = startrek.compute_direction(self._world.sector_x, self._world.sector_y, self.sx, self.sy)
+            # Perform navigation
+            (output, obstacle) = startrek._navigation(direction, dist)
+            startrek.print_strings(output)
+
+        return None
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with navigating to the target quadrant.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with navigating to the target quadrant, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        if isinstance(goal, RepairResuplyEnterpriseGoal):
+            # Not to be taken literally, but simply to indicated that completing this action
+            # to get to a target quandrant with a Klingon ship will lower the insistence of the FindKlingonShipGoal.
             return -GoalInsistence.HIGH
         else:
             return GoalInsistence.ZERO

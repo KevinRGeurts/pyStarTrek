@@ -59,7 +59,7 @@ def play_ai_game():
     """
 
     # Here is a little block of code for debugging purposes.
-    # act=startrek_actions.NavigateToQuadrantAction(qx=2, qy=6, expiry_time=3, priority=10)
+    # act=startrek_actions.NavigateToQuadrantAction(qx=1, qy=7, expiry_time=3, priority=10)
     # act.execute()
     # act.execute()
     # act.execute()
@@ -73,6 +73,7 @@ def play_ai_game():
     gob.add_goal(startrek_goals.FindKlingonShipGoal())
     gob.add_goal(startrek_goals.DestroyKlingonShipGoal())
     gob.add_goal(startrek_goals.ExploreGalaxyGoal())
+    gob.add_goal(startrek_goals.RepairResuplyEnterpriseGoal())
     # Create the possible actions for the Star Trek game.
     find_K_act=startrek_actions.FindKlingonShipAction(expiry_time=10, priority=10)
     gob.add_action(find_K_act)
@@ -82,6 +83,7 @@ def play_ai_game():
     gob.add_action(attack_act)
     explore_act=startrek_actions.ExploreUnknownRegionAction(expiry_time=10, priority=10)
     gob.add_action(explore_act)
+    find_K_act=startrek_actions.FindStarbaseAction(expiry_time=10, priority=10)
     
     mgr = ActionManager()
     

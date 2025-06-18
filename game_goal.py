@@ -11,7 +11,8 @@ class GoalInsistence(IntEnum):
     LOW = 2
     MEDIUM = 4
     HIGH = 8
-    URGENT = 16
+    VERY_HIGH = 16
+    URGENT = 32
 
 
 class GameGoal(object):

@@ -9,10 +9,26 @@ from game_action import GameActionSequence
 from game_goal import GoalInsistence, GameGoal
 from world_interface import WorldInterface
 from startrek_goals import DestroyKlingonShipGoal, SurviveGoal, FindKlingonShipGoal, ExploreGalaxyGoal
+from startrek_goals import RepairResuplyEnterpriseGoal
 from exceptions import ActionCannotAchieveGoalError
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
+
+
+class Test_FindStarbaseAction(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        startrek.generate_sector()
+        self._world = WorldInterface()
+
+    def test_execute(self):
+        seq=startrek_actions.FindStarbaseAction(expiry_time=3, priority=10)
+        while not seq.isComplete(): 
+            seq.execute()
+        # Have we docked with a starbase??
+        self.assertTrue(self._world.docked)
 
 
 class Test_FirePhasersAction(unittest.TestCase):
@@ -239,6 +255,72 @@ class Test_LongRangeScanAction(unittest.TestCase):
 
     def test_getGoalChange_others(self):
         act = startrek_actions.LongRangeScanAction()
+        goal = GameGoal()
+        exp_val = GoalInsistence.ZERO
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+
+class Test_ShortRangeScanAction(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+        startrek.generate_sector()
+        self._world = WorldInterface()
+
+    def test_execute(self):
+        # Create and execute an act to get us to a quadrant with a starbase.
+        nav_act = startrek_actions.NavigateToQuadrantAction(qx=1, qy=7)
+        nav_act.execute()
+        exp_val = (1,7)
+        act_val = (self._world.quadrant_x, self._world.quadrant_y)
+        self.assertTupleEqual(exp_val, act_val)
+        # Now create and execute the short range scan action, as part of a sequence, so we have a blackboard.
+        seq = GameActionSequence()
+        scan_act = startrek_actions.ShortRangeScanAction(expiry_time=3, priority=10,
+                                                         read_blackboard=seq.readFromBlackBoard,
+                                                         write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(scan_act)
+        seq.execute()
+        # Did we get the expected starbase sector?
+        exp_val = (7,6)
+        act_val = (seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_SECT_X),
+                   seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_SECT_Y))
+        self.assertTupleEqual(exp_val, act_val)
+
+    def test_execute_short_range_scan_damaged(self):
+        glob_vars.the_game.short_range_scan_damage = 1  # Set the short range scan to be damaged.
+        seq = GameActionSequence()
+        act = startrek_actions.ShortRangeScanAction(expiry_time=3, priority=10,
+                                                    read_blackboard=seq.readFromBlackBoard,
+                                                    write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        # Should not find any starbbase sector info on blackboard
+        self.assertIsNone(seq.readFromBlackBoard(startrek_actions.BlackboardDatumType.BASE_SECT_X))
+
+    def test_isComplete_True(self):
+        seq = GameActionSequence()
+        act = startrek_actions.ShortRangeScanAction(expiry_time=3, priority=10,
+                                                    read_blackboard=seq.readFromBlackBoard,
+                                                    write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(act)
+        seq.execute()
+        self.assertTrue(act.isComplete())
+
+    def test_isComplete_False(self):
+        act = startrek_actions.ShortRangeScanAction()
+        self.assertFalse(act.isComplete())
+
+    def test_getGoalChange(self):
+        act = startrek_actions.ShortRangeScanAction()
+        goal = RepairResuplyEnterpriseGoal()
+        exp_val = -GoalInsistence.HIGH
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+    def test_getGoalChange_others(self):
+        act = startrek_actions.ShortRangeScanAction()
         goal = GameGoal()
         exp_val = GoalInsistence.ZERO
         act_val = act.getGoalChange(goal)
@@ -537,6 +619,93 @@ class Test_NavigateToQuadrantAction(unittest.TestCase):
         act = startrek_actions.NavigateToQuadrantAction()
         goal = GameGoal()
         exp_val = GoalInsistence.ZERO
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+
+class Test_DockWithStarbaseAction(unittest.TestCase):
+    def test_init(self):
+        act=startrek_actions.DockWithStarbaseAction(sx=7, sy=2, expiry_time=3, priority=10)
+        exp_val = (7, 2, 3, 10)
+        act_val = (act.sx, act.sy, act.expiry_time, act.priority)
+        self.assertTupleEqual(exp_val, act_val)
+
+    def test_init_sx_low(self):
+        self.assertRaises(AssertionError, startrek_actions.DockWithStarbaseAction,
+                          sx=-1, sy=2, expiry_time=3, priority=10)
+
+    def test_init_sx_high(self):
+        self.assertRaises(AssertionError, startrek_actions.DockWithStarbaseAction,
+                          sx=8, sy=2, expiry_time=3, priority=10)
+
+    def test_init_sy_low(self):
+        self.assertRaises(AssertionError, startrek_actions.DockWithStarbaseAction,
+                          sx=7, sy=-1, expiry_time=3, priority=10)
+
+    def test_init_sy_high(self):
+        self.assertRaises(AssertionError, startrek_actions.DockWithStarbaseAction,
+                          sx=7, sy=8, expiry_time=3, priority=10)
+
+    def test_execute_complete(self):
+        random.seed(1234567890)
+        gm=glob_vars.the_game        
+        startrek.initialize_game()
+        startrek.generate_sector()
+        act=startrek_actions.DockWithStarbaseAction(sx=7, sy=4)
+        act.execute()
+        exp_val = (7,4)
+        act_val = (gm.sector_x, gm.sector_y)
+        self.assertTupleEqual(exp_val, act_val)
+        self.assertTrue(act.isComplete())
+
+    def test_execute_with_obstacle(self):
+        random.seed(1234567890)
+        gm=glob_vars.the_game        
+        startrek.initialize_game()
+        startrek.generate_sector()
+        act=startrek_actions.DockWithStarbaseAction(sx=3, sy=0)
+        act.execute()
+        exp_val = (3,0)
+        act_val = (gm.sector_x, gm.sector_y)
+        self.assertTupleEqual(exp_val, act_val)
+        self.assertTrue(act.isComplete())
+
+    def test_execute_goal_not_achievable(self):
+        seq = GameActionSequence()
+        act=startrek_actions.DockWithStarbaseAction(read_blackboard=seq.readFromBlackBoard,
+                                                    write_blackboard=seq.writeToBlackBoard)
+        # Since sx and sy are not set, and can't be read from sequence blackbaord, execution will fail,
+        # and raise an exception.
+        self.assertRaises(ActionCannotAchieveGoalError, act.execute)
+
+    def test_execute_max_attempts_exceeded(self):
+        random.seed(1234567890)
+        gm=glob_vars.the_game        
+        startrek.initialize_game()
+        startrek.generate_sector()        
+        act=startrek_actions.DockWithStarbaseAction(sx=2, sy=6, expiry_time=3, priority=10)
+        # Since qx and qy, as set, will run Enterprise into a star in it's current quadrant,
+        # acton will fail here on the first attempt.
+        act.execute()
+        self.assertFalse(act.isComplete())
+        # Now it will fail on a second attempt.
+        act.execute()
+        self.assertFalse(act.isComplete())
+        # Now on the third attempt, it will fail again, but be marked complete.
+        act.execute()
+        self.assertTrue(act.isComplete())
+
+    def test_getGoalChange(self):
+        act = startrek_actions.DockWithStarbaseAction()
+        goal = RepairResuplyEnterpriseGoal()
+        exp_val = -GoalInsistence.HIGH
+        act_val = act.getGoalChange(goal)
+        self.assertEqual(exp_val, act_val)
+
+    def test_getGoalChange_others(self):
+        act = startrek_actions.DockWithStarbaseAction()
+        goal = GameGoal()
+        exp_val = -GoalInsistence.ZERO
         act_val = act.getGoalChange(goal)
         self.assertEqual(exp_val, act_val)
 

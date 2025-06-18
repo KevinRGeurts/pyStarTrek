@@ -9,8 +9,10 @@ from unittest.mock import patch
 from world_interface import WorldInterface
 from game_goal import GoalInsistence
 from startrek_goals import SurviveGoal, FindKlingonShipGoal, DestroyKlingonShipGoal, ExploreGalaxyGoal
+from startrek_goals import RepairResuplyEnterpriseGoal
 from startrek_actions import RaiseShieldsAction
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
+import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
 
 class Test_DestroyKlingonShipGoal(unittest.TestCase):
@@ -147,6 +149,71 @@ class Test_ExploreGalaxyGoal(unittest.TestCase):
     def test_getInsistence_no_klingon_ship_in_quadrant(self):
         goal=ExploreGalaxyGoal()
         exp_val=GoalInsistence.MEDIUM
+        act_val=goal.getInsistence()
+        self.assertEqual(act_val, exp_val)
+
+
+class Test_RepairResuplyEnterpriseGoal(unittest.TestCase):
+    def setUp(self):
+        random.seed(1234567890)
+        startrek.initialize_game()
+
+    def test_init(self):
+        goal=RepairResuplyEnterpriseGoal()
+        self.assertEqual(goal.name, "RepairResuplyEnterprise")
+
+    def test_str(self):
+        goal=RepairResuplyEnterpriseGoal()
+        exp_val = "Goal: RepairResuplyEnterprise"
+        act_val = str(goal)
+        self.assertEqual(act_val, exp_val)
+
+    def test_getInsistence_nominal(self):
+        goal=RepairResuplyEnterpriseGoal()
+        exp_val=GoalInsistence.ZERO
+        act_val=goal.getInsistence()
+        self.assertEqual(act_val, exp_val)
+
+    def test_getInsistence_low_energy(self):
+        glob_vars.the_game.energy = 499  # Set energy below threshold
+        goal=RepairResuplyEnterpriseGoal()
+        exp_val=GoalInsistence.VERY_HIGH
+        act_val=goal.getInsistence()
+        self.assertEqual(act_val, exp_val)
+
+    def test_getInsistence_low_torpedos(self):
+        glob_vars.the_game.photon_torpedoes = 0  # Set number of torpedoes below threshold
+        goal=RepairResuplyEnterpriseGoal()
+        exp_val=GoalInsistence.VERY_HIGH
+        act_val=goal.getInsistence()
+        self.assertEqual(act_val, exp_val)
+                         
+    def test_getInsistence_phaser_damage(self):
+        glob_vars.the_game.phaser_damage = 1  # Set phaser damage above threshold
+        goal=RepairResuplyEnterpriseGoal()
+        exp_val=GoalInsistence.ZERO
+        act_val=goal.getInsistence()
+        self.assertEqual(act_val, exp_val)
+
+    def test_getInsistence_photon_damage(self):
+        glob_vars.the_game.photon_damage = 1  # Set photon torpedo damage above threshold
+        goal=RepairResuplyEnterpriseGoal()
+        exp_val=GoalInsistence.ZERO
+        act_val=goal.getInsistence()
+        self.assertEqual(act_val, exp_val)
+
+    def test_getInsistence_weapons_damage(self):
+        glob_vars.the_game.phaser_damage = 1  # Set phaser damage above threshold
+        glob_vars.the_game.photon_damage = 1  # Set photon torpedo damage above threshold
+        goal=RepairResuplyEnterpriseGoal()
+        exp_val=GoalInsistence.VERY_HIGH
+        act_val=goal.getInsistence()
+        self.assertEqual(act_val, exp_val)
+
+    def test_getInsistence_shield_damage(self):
+        glob_vars.the_game.shield_control_damage = 1  # Set shield control damage above threshold
+        goal=RepairResuplyEnterpriseGoal()
+        exp_val=GoalInsistence.VERY_HIGH
         act_val=goal.getInsistence()
         self.assertEqual(act_val, exp_val)
 

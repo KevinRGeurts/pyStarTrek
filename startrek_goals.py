@@ -5,6 +5,35 @@ from game_goal import GameGoal, GoalInsistence
 from world_interface import WorldInterface
 
 
+class RepairResuplyEnterpriseGoal(GameGoal):
+    """
+    This class represents the goal in a Star Trek game for the Enterprise to repair and resupply itself.
+    """
+    def __init__(self):
+        """
+        Initialize the RepairResuplyEnterpriseGoal object.
+        """
+        super().__init__(name="RepairResuplyEnterprise")
+        self._world=WorldInterface()
+
+    def getInsistence(self):
+        """
+        Return the insistence value of the RepairResuplyEnterprise goal.
+        :return: The insistence of the RepairResuplyEnterprise goal, as int
+        """
+        # TODO: Also check for damage to the Enterprise
+        if self._world.energy < 500:
+            return GoalInsistence.VERY_HIGH
+        elif self._world.photon_torpedoes < 1:
+            return GoalInsistence.VERY_HIGH
+        elif self._world.phaser_damage and self._world.photon_torpedo_damage > 0:
+            return GoalInsistence.VERY_HIGH
+        elif self._world.shield_control_damage > 0:
+            return GoalInsistence.VERY_HIGH
+        else:
+            return GoalInsistence.ZERO
+
+
 class SurviveGoal(GameGoal):
     """
     This class represents the goal in a Star Trek game for the Enterprise to survive the game.
