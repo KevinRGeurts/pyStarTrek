@@ -6,7 +6,7 @@ from math import exp
 from game_action import GameAction, GameActionSequence
 from game_goal import GameGoal, GoalInsistence
 from startrek_goals import DestroyKlingonShipGoal, ExploreGalaxyGoal, SurviveGoal, FindKlingonShipGoal
-from startrek_goals import RepairResuplyEnterpriseGoal
+from startrek_goals import RepairResuplyEnterpriseGoal, ABSOLUTE_MINIMUM_SHIP_ENERGY
 from utilities import StarTrekCourse
 from world_interface import WorldInterface
 from exceptions import ActionCannotAchieveGoalError
@@ -18,15 +18,16 @@ class BlackboardDatumType(StrEnum):
     """
     Enumeration of the types of data that can be written to the blackboard in a Star Trek game.
     """
-    KLINGON_QUAD_X = 'klingon_quad_x'
-    KLINGON_QUAD_Y = 'klingon_quad_y'
-    BASE_QUAD_X = 'base_quad_x'
-    BASE_QUAD_Y = 'base_quad_y'
-    BASE_SECT_X = 'base_sect_x'
-    BASE_SECT_Y = 'base_sect_y'
-    UNSCANNED_QUAD_X = 'unscanned_quad_x'
-    UNSCANNED_QUAD_Y = 'unscanned_quad_y'
-    FIRE_PHASERS = 'fire_phasers'
+    KLINGON_QUAD_X = 'klingon_quad_x' # The x-coordinate of a quadrant with Klingon ship(s) [0..7], as int.
+    KLINGON_QUAD_Y = 'klingon_quad_y' # The y-coordinate of a quadrant with Klingon ship(s) [0..7], as int.
+    BASE_QUAD_X = 'base_quad_x' # The x-coordinate of a quadrant with a starbase [0..7], as int.
+    BASE_QUAD_Y = 'base_quad_y' # The y-coordinate of a quadrant with a starbase [0..7], as int.
+    BASE_SECT_X = 'base_sect_x' # The x-coordinate of a sector with a starbase [0..7], as int.
+    BASE_SECT_Y = 'base_sect_y' # The y-coordinate of a sector with a starbase [0..7], as int.
+    UNSCANNED_QUAD_X = 'unscanned_quad_x' # The x-coordinate of an unscanned quadrant [0..7], as int.
+    UNSCANNED_QUAD_Y = 'unscanned_quad_y' # The y-coordinate of an unscanned quadrant [0..7], as int.
+    FIRE_PHASERS = 'fire_phasers' # Whether to fire phasers, as boolean.
+    SUGGESTED_PHASER_LEVEL = 'suggested_phaser_level' # The suggested phaser energy level to fire at, as int.
 
 
 class StarTrekAction(GameAction):
@@ -526,14 +527,19 @@ class RaiseShieldsAction(StarTrekAction):
         # Are we trying to increase shield enregy?
         elif self._shield_energy > current_shields:
             # Check if we have enough energy to raise shields
-            if (self._shield_energy - current_shields) > self._world.energy:
-                # Not enough energy to raise shields
+            if (self._world.energy - (self._shield_energy - current_shields)) < ABSOLUTE_MINIMUM_SHIP_ENERGY:
+                # Not enough energy to raise shields, while maintaining a mimumum level of ship's energy
                 startrek.print_strings([f"Not enough energy to increase shields to {self._shield_energy}."])
-                return
-            else:
-                # Add to shield energy
-                output = startrek._shield_controls_adjust(True, self._shield_energy - current_shields)
-                startrek.print_strings(output)
+                startrek.print_strings([f"Minimum ship energy is {ABSOLUTE_MINIMUM_SHIP_ENERGY}."])
+                available_energy = self._world.energy - ABSOLUTE_MINIMUM_SHIP_ENERGY
+                if available_energy > 0:
+                    startrek.print_strings([f"Shields will be increased to {current_shields + available_energy}."])
+                    self._shield_energy = available_energy
+                else:
+                    return
+            # Add to shield energy
+            output = startrek._shield_controls_adjust(True, self._shield_energy - current_shields)
+            startrek.print_strings(output)
         # Are we trying to decrease shield energy?
         else:
             # If we are asking to lower the shields to zero, then we'll just lower them to zero
@@ -811,7 +817,13 @@ class FirePhasersAction(StarTrekAction):
                 self._is_complete = True
                 print("FirePhasersAction Not firing phasers: blackboard indicates not to fire.")
                 return
-        
+            
+            suggested_phaser_level = self._read_blackboard(BlackboardDatumType.SUGGESTED_PHASER_LEVEL)
+            if suggested_phaser_level is not None:
+                # If the blackboard suggests a phaser energy level, then use that instead of the one specified in the action.
+                self._phaser_energy = suggested_phaser_level
+                print(f"FirePhasersAction Using suggested phaser energy level of {self._phaser_energy}.")
+            
         # Check if phaser control is damaged or if we are out of torpedoes.
         (possible, output) = startrek._phaser_control_precheck()
         if not possible:
@@ -822,9 +834,22 @@ class FirePhasersAction(StarTrekAction):
         num_targets = len(self._world.klingon_ships)
         print(f"FirePhasersAction Firing phasers with energy level {self._phaser_energy} at {num_targets} Klingon ships in quadrant.")
         # Fire the phasers
-        (output, num_destroyed) = startrek._phaser_controls_fire(self._phaser_energy)
+        (output, num_destroyed, remaining_ships) = startrek._phaser_controls_fire(self._phaser_energy)
         startrek.print_strings(output)
-        self._is_complete = num_destroyed >= num_targets  # If we destroyed all targets, the action is complete.
+        if num_destroyed >= num_targets:
+            # If we destroyed all targets, then the action is complete.
+            self._is_complete = True
+        else:
+            # If we did not destroy all targets, write a hint to the blackboard of the phaser energy to use
+            # the next time we fire phaseers.
+            max_phaser_energy_needed = 0
+            for ship in remaining_ships:
+                energy_needed = ship[1] / (1.0 - ship[0]/11.3) # Magic number of 11.3 comes from the startrek module _phaser_controls_fire(...)
+                if energy_needed > max_phaser_energy_needed:
+                    max_phaser_energy_needed = energy_needed
+            max_phaser_energy_needed = len(remaining_ships) * max_phaser_energy_needed  # Total energy needed to destroy all remaining ships)
+            if self._write_blackboard is not None:
+                self._write_blackboard(BlackboardDatumType.SUGGESTED_PHASER_LEVEL, max_phaser_energy_needed)
         return None
 
     def isComplete(self):
@@ -931,12 +956,15 @@ class DockWithStarbaseAction(StarTrekAction):
         (output, obstacle) = startrek._navigation(direction, dist)
         startrek.print_strings(output)
 
-        while obstacle:
+        while obstacle and not self._world.docked:
             print(f"DockWithStarbaseAction Navigating around obstacle near ({self._world.sector_x+1}, {self._world.sector_x+1}).")
             # Try to steer away from obstacle, by turning 45 degrees to the right, and navigating
             # 1 sector forward in that direction. 
-            direction = float(StarTrekCourse(direction) - 1.0)  # Turn right by 45 degrees
-            dist = 0.1 # A distance of 1 sector
+            # TODO: Turning right by 45 degrees doesn't work to steer around obstacles. Could be a bug
+            # in the startrek module's _navigation function, or a consequence of the rounding. For now,
+            # try turning 90 degress to the right instead.
+            direction = float(StarTrekCourse(direction) - 1.0)  # Turn right by 90 degrees
+            dist = 0.1 # A distance of > 1 sector
             (output, obstacle) = startrek._navigation(direction, dist)
             startrek.print_strings(output)
             assert(not obstacle)  # We should not hit an obstacle after turning right and moving forward.)

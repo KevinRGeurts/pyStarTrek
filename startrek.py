@@ -59,10 +59,22 @@ def play_ai_game():
     """
 
     # Here is a little block of code for debugging purposes.
-    # act=startrek_actions.NavigateToQuadrantAction(qx=1, qy=7, expiry_time=3, priority=10)
-    # act.execute()
-    # act.execute()
-    # act.execute()
+    shield_action = startrek_actions.RaiseShieldsAction(shield_energy=500, expiry_time=3, priority=10)
+    while not shield_action.isComplete(): 
+        shield_action.execute()
+    # Navigate to quadrant with klingon ship
+    nav_action = startrek_actions.FindKlingonShipAction()
+    while not nav_action.isComplete(): 
+        nav_action.execute()
+    # Fire phasers multiple times at the klingon ship.
+    seq = startrek_actions.GameActionSequence(expiry_time=3, priority=10)
+    seq.writeToBlackBoard(startrek_actions.BlackboardDatumType.FIRE_PHASERS, True)
+    fire_action = startrek_actions.FirePhasersAction(phaser_energy=100, expiry_time=3, priority=10,
+                                                     read_blackboard=seq.readFromBlackBoard,
+                                                     write_blackboard=seq.writeToBlackBoard)
+    seq.addAction(fire_action)
+    while not seq.isComplete(): 
+        seq.execute()
     # End of debugging block.
 
     game=glob_vars.the_game
@@ -386,7 +398,7 @@ def phaser_controls():
         ret_val.append(i)
     if not possible:
         return ret_val
-    (output, ships_destroyed) = _phaser_controls_fire(phaser_energy)
+    (output, ships_destroyed, remaining_ships) = _phaser_controls_fire(phaser_energy)
     for i in output:
         ret_val.append(i)
     return ret_val
@@ -434,13 +446,16 @@ def _phaser_controls_fire(phaser_energy):
     """
     Actually fire the phasers.
     :parameter phaser_energy: Amount of energy to fire phasers with, float
-    :return: Tuple (List of strings to be printed, Numnber of destroyed klingon ships, as int)
+    :return: Tuple (1) List of strings to be printed,
+                   (2) Numnber of destroyed Klingon ships, as int,
+                   (3) List of tuples (distance as float, shield strength as int) of undestroyed Klingon ships)
     """
     game=glob_vars.the_game
     ret_val=[] # list of strings
     ret_val.append("")
     ret_val.append("Firing phasers...")
     destroyed_ships = []
+    remaining_ships = []  # List of undestroyed Klingon ships, as tuples (distance, shield strength)
     for ship in game.klingon_ships:
         game.energy -= int(phaser_energy)
         if game.energy < 0:
@@ -454,8 +469,9 @@ def _phaser_controls_fire(phaser_energy):
             destroyed_ships.append(ship)
         else:
             ret_val.append("Hit ship at sector [{0},{1}]. Klingon shield strength dropped to {2}.".format(
-                ship.sector_x + 1, ship.sector_y + 1, ship.shield_level
-            ))
+                ship.sector_x + 1, ship.sector_y + 1, ship.shield_level))
+            dist = distance(game.sector_x, game.sector_y, ship.sector_x, ship.sector_y)
+            remaining_ships.append((dist, ship.shield_level))
     for ship in destroyed_ships:
         game.quadrants[game.quadrant_y][game.quadrant_x].klingons -= 1
         game.klingons -= 1
@@ -467,7 +483,7 @@ def _phaser_controls_fire(phaser_energy):
         for i in output:
             ret_val.append(i)
     ret_val.append("")
-    return (ret_val, len(destroyed_ships))
+    return (ret_val, len(destroyed_ships), remaining_ships)
 
 
 def shield_controls():

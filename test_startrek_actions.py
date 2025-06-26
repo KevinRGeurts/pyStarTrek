@@ -9,7 +9,7 @@ from game_action import GameActionSequence
 from game_goal import GoalInsistence, GameGoal
 from world_interface import WorldInterface
 from startrek_goals import DestroyKlingonShipGoal, SurviveGoal, FindKlingonShipGoal, ExploreGalaxyGoal
-from startrek_goals import RepairResuplyEnterpriseGoal
+from startrek_goals import RepairResuplyEnterpriseGoal, ABSOLUTE_MINIMUM_SHIP_ENERGY
 from exceptions import ActionCannotAchieveGoalError
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
@@ -54,7 +54,7 @@ class Test_FirePhasersAction(unittest.TestCase):
         fire.execute()
         self.assertFalse(fire.isComplete())
 
-    def test_execute(self):
+    def test_execute_fire_once(self):
         # Navigate to quadrant with klingon ship
         nav_action = startrek_actions.FindKlingonShipAction()
         while not nav_action.isComplete(): 
@@ -62,6 +62,25 @@ class Test_FirePhasersAction(unittest.TestCase):
         fire = startrek_actions.FirePhasersAction(phaser_energy=1000, expiry_time=3, priority=10)
         fire.execute()
         self.assertTrue(fire.isComplete())
+
+    def test_execute_fire_multiple(self):
+        shield_action = startrek_actions.RaiseShieldsAction(shield_energy=500, expiry_time=3, priority=10)
+        while not shield_action.isComplete(): 
+            shield_action.execute()
+        # Navigate to quadrant with klingon ship
+        nav_action = startrek_actions.FindKlingonShipAction()
+        while not nav_action.isComplete(): 
+            nav_action.execute()
+        # Fire phasers multiple times at the klingon ship.
+        seq = GameActionSequence(expiry_time=3, priority=10)
+        seq.writeToBlackBoard(startrek_actions.BlackboardDatumType.FIRE_PHASERS, True)
+        fire_action = startrek_actions.FirePhasersAction(phaser_energy=100, expiry_time=3, priority=10,
+                                                         read_blackboard=seq.readFromBlackBoard,
+                                                         write_blackboard=seq.writeToBlackBoard)
+        seq.addAction(fire_action)
+        while not seq.isComplete(): 
+            seq.execute()
+        self.assertTrue(seq.isComplete())
 
     def test_getGoalChange(self):
         act = startrek_actions.FirePhasersAction()
@@ -513,8 +532,17 @@ class Test_RaiseShieldsAction(unittest.TestCase):
         self.assertEqual(exp_val, act_val)
         self.assertTrue(act2.isComplete())
 
-    def test_execute_raise_incomplete(self):
+    def test_execute_raise_less_than_asked(self):
         act=startrek_actions.RaiseShieldsAction(shield_energy=5000, expiry_time=3, priority=10)
+        act.execute()
+        exp_val=2800
+        act_val=self._world.shield_level
+        self.assertEqual(exp_val, act_val)
+        self.assertTrue(act.isComplete())
+
+    def test_execute_raise_incomplete(self):
+        glob_vars.the_game.energy = ABSOLUTE_MINIMUM_SHIP_ENERGY
+        act=startrek_actions.RaiseShieldsAction(shield_energy=1, expiry_time=3, priority=10)
         act.execute()
         exp_val=0
         act_val=self._world.shield_level

@@ -4,6 +4,7 @@
 from game_goal import GameGoal, GoalInsistence
 from world_interface import WorldInterface
 
+ABSOLUTE_MINIMUM_SHIP_ENERGY = 200 # Do not take actions in pursuit of goals that will leave the ship with less than this amount of energy.
 
 class RepairResuplyEnterpriseGoal(GameGoal):
     """
@@ -50,7 +51,10 @@ class SurviveGoal(GameGoal):
         Return the insistence value of the Survive goal.
         :return: The insistence of the Survive goal, as int
         """
-        if self._world.shield_level <= 100 and self._world.quadrant.klingons > 0:
+        if self._world.shield_level <= 100 \
+           and self._world.energy > ABSOLUTE_MINIMUM_SHIP_ENERGY \
+           and self._world.quadrant.klingons > 0 \
+           and not self._world.docked:
             return GoalInsistence.URGENT
         else:
             return GoalInsistence.ZERO
