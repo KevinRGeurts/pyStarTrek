@@ -5,8 +5,7 @@
     <ProjectGuid>380871c9-84bc-4191-981c-22666a36a4f5</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>startrek.py</StartupFile>
-    <SearchPath>
-    </SearchPath>
+    <SearchPath>..\GameAIFoundation</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>StarTrek</Name>
