@@ -24,6 +24,8 @@ class BlackboardDatumType(StrEnum):
     BASE_QUAD_Y = 'base_quad_y' # The y-coordinate of a quadrant with a starbase [0..7], as int.
     BASE_SECT_X = 'base_sect_x' # The x-coordinate of a sector with a starbase [0..7], as int.
     BASE_SECT_Y = 'base_sect_y' # The y-coordinate of a sector with a starbase [0..7], as int.
+    EMPT_SECT_X = 'empty_sect_x' # The x-coordinate of an empty sector within a quadrant [0..7], as int.
+    EMPT_SECT_Y = 'empty_sect_y' # The y-coordinate of an empty sector within a quadrant [0..7], as int.
     UNSCANNED_QUAD_X = 'unscanned_quad_x' # The x-coordinate of an unscanned quadrant [0..7], as int.
     UNSCANNED_QUAD_Y = 'unscanned_quad_y' # The y-coordinate of an unscanned quadrant [0..7], as int.
     FIRE_PHASERS = 'fire_phasers' # Whether to fire phasers, as boolean.
@@ -100,7 +102,9 @@ class FindStarbaseAction(GameActionSequence):
                                               write_blackboard=self.writeToBlackBoard)
         dock_act = DockWithStarbaseAction(read_blackboard=self.readFromBlackBoard,
                                           write_blackboard=self.writeToBlackBoard)
-        super().__init__(expiry_time, priority, seq_acts=[long_scan_act, rec_act, nav_act, short_scan_act, dock_act])
+        undock_act = UndockFromStarbaseAction(read_blackboard=self.readFromBlackBoard,
+                                            write_blackboard=self.writeToBlackBoard)
+        super().__init__(expiry_time, priority, seq_acts=[long_scan_act, rec_act, nav_act, short_scan_act, dock_act, undock_act])
 
 
 class AttackKlingonShipAction(GameActionSequence):
@@ -674,14 +678,19 @@ class NavigateToQuadrantAction(StarTrekAction):
 
         while obstacle:
             print(f"NavigateToQuadrantAction Navigating around obstacle near ({self._world.sector_x+1}, {self._world.sector_x+1}).")
-            # Try to steer away from obstacle, by turning 45 degrees to the left, and navigating
-            # 1 sector forward in that direction. 
-            direction = float(StarTrekCourse(direction) + 1.0)  # Turn left by 45 degrees
-            dist = 0.1 # A distance of 1 sector
+            # Try to steer around the obstacle.
+            # First, back up a bit, by turning 180 degrees. 
+            direction = float(StarTrekCourse(direction) - 4.0)  # Turn by 180 degrees
+            dist = 1.0 / 8.0 # A distance of 1 sector
             (output, obstacle) = startrek._navigation(direction, dist)
             startrek.print_strings(output)
-            assert(not obstacle)  # We should not hit an obstacle after turning left and moving forward.)
-
+            assert(not obstacle)  # We should not hit an obstacle by backing up.
+            # Now reorient so we are 45 degrees right of the course that oringinally took us to the obstacle.
+            direction = float(StarTrekCourse(direction) + 3.0)  # Turn back by 180-45 = 135 degrees
+            dist = 2.0 / 8.0 # A distance of 2 sectors, hopefully enough to get around the obstacle.
+            (output, obstacle) = startrek._navigation(direction, dist)
+            startrek.print_strings(output)
+            assert(not obstacle)  # We should not hit an obstacle by this turnning back maneuver.
             # Now, reattempt navigation to the target quadrant.
             # Determine distance to target quadrant
             dist = startrek.distance(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
@@ -946,38 +955,38 @@ class DockWithStarbaseAction(StarTrekAction):
         print(f"DockWithStarbaseAction Navigating to sector ({self.sx+1}, {self.sy+1}).")
 
         # Determine distance to target sector
-        # TODO: Investigate HACK of adding (1.0/8.0) to the distance. Without this, were always
-        # coming up one sector short of the target sector. Suspect this could be compensating for a bug
-        # in the startrek module's _navigation function.
-        dist = startrek.distance(self._world.sector_x, self._world.sector_y, self.sx, self.sy) / 8.0 + (1.0/8.0)
+        dist = startrek.distance(self._world.sector_x, self._world.sector_y, self.sx, self.sy) / 8.0
         # Determine direction to target sector
         direction = startrek.compute_direction(self._world.sector_x, self._world.sector_y, self.sx, self.sy)
         # Perform navigation
+        self.writeLastSector(self._world.sector_x, self._world.sector_y)
         (output, obstacle) = startrek._navigation(direction, dist)
         startrek.print_strings(output)
 
         while obstacle and not self._world.docked:
             print(f"DockWithStarbaseAction Navigating around obstacle near ({self._world.sector_x+1}, {self._world.sector_x+1}).")
-            # Try to steer away from obstacle, by turning 45 degrees to the right, and navigating
-            # 1 sector forward in that direction. 
-            # TODO: Turning right by 45 degrees doesn't work to steer around obstacles. Could be a bug
-            # in the startrek module's _navigation function, or a consequence of the rounding. For now,
-            # try turning 90 degress to the right instead.
-            direction = float(StarTrekCourse(direction) - 1.0)  # Turn right by 90 degrees
-            dist = 0.1 # A distance of > 1 sector
+            # Try to steer around the obstacle.
+            # First, back up a bit, by turning 180 degrees.
+            direction = float(StarTrekCourse(direction) - 4.0)  # Turn by 180 degrees
+            dist = 1.0 / 8.0 # A distance of 1 sector
+            self.writeLastSector(self._world.sector_x, self._world.sector_y)
             (output, obstacle) = startrek._navigation(direction, dist)
             startrek.print_strings(output)
-            assert(not obstacle)  # We should not hit an obstacle after turning right and moving forward.)
-
+            assert(not obstacle)  # We should not hit an obstacle by backing up.
+            # Now reorient so we are 45 degrees right of the course that oringinally took us to the obstacle.
+            direction = float(StarTrekCourse(direction) + 3.0)  # Turn back by 180-45 = 135 degrees
+            dist = 2.0 / 8.0 # A distance of 2 sectors, hopefully enough to get around the obstacle.
+            self.writeLastSector(self._world.sector_x, self._world.sector_y)
+            (output, obstacle) = startrek._navigation(direction, dist)
+            startrek.print_strings(output)
+            assert(not obstacle)  # We should not hit an obstacle by this turnning back maneuver.
             # Now, reattempt navigation to the target sector.
             # Determine distance to target sector
-            # TODO: Investigate HACK of adding (1.0/8.0) to the distance. Without this, were always
-            # coming up one sector short of the target sector. Suspect this could be compensating for a bug
-            # in the startrek module's _navigation function.
-            dist = startrek.distance(self._world.sector_x, self._world.sector_y, self.sx, self.sy) / 8.0 + (1.0/8.0)
+            dist = startrek.distance(self._world.sector_x, self._world.sector_y, self.sx, self.sy) / 8.0
             # Determine direction to target sector
             direction = startrek.compute_direction(self._world.sector_x, self._world.sector_y, self.sx, self.sy)
             # Perform navigation
+            self.writeLastSector(self._world.sector_x, self._world.sector_y)
             (output, obstacle) = startrek._navigation(direction, dist)
             startrek.print_strings(output)
 
@@ -985,14 +994,118 @@ class DockWithStarbaseAction(StarTrekAction):
 
     def getGoalChange(self, goal=None):
         """
-        Return the goal insistence change associated with navigating to the target quadrant.
+        Return the goal insistence change associated with navigating to the target sector.
         :param goal: The goal to check against, as GameGoal object.
-        :return: The goal insistence change associated with navigating to the target quadrant, as int.
+        :return: The goal insistence change associated with navigating to the target sector, as int.
         """
         assert(isinstance(goal, GameGoal))
         if isinstance(goal, RepairResuplyEnterpriseGoal):
             # Not to be taken literally, but simply to indicated that completing this action
-            # to get to a target quandrant with a Klingon ship will lower the insistence of the FindKlingonShipGoal.
+            # to dock with a starbase will lower the insistence of the RepairResuplyEnterpriseGoal.
+            return -GoalInsistence.HIGH
+        else:
+            return GoalInsistence.ZERO
+
+    def writeLastSector(self, sx=None, sy=None):
+        """
+        Write to the blackboard the last sector the Enterprise navigated from before successfully docking with a starbase.
+        :param sx: The sector x-coordinate [0..7] to write, as int.
+        :param sy: The sector y-coordinate [0..7] to write, as int.
+        :return: None
+        """
+        if self._write_blackboard is not None:
+            self._write_blackboard(BlackboardDatumType.EMPT_SECT_X, sx)
+            self._write_blackboard(BlackboardDatumType.EMPT_SECT_Y, sy)
+        return None
+
+
+class UndockFromStarbaseAction(StarTrekAction):
+    """
+    Represents an action in a Star Trek game where a player navigates within a sector to undock from a starbase.
+    """
+    def __init__(self, sx=None, sy=None, expiry_time=0, priority=0, read_blackboard=None, write_blackboard=None):
+        """
+        :param sx: The sector x-coordinate [0..7] to navigate to, as int.
+        :param sy: The sector y-coordinate [0..7] to navigate to, as int.
+        :param expiry_time: The time in an arbitrary count-up from zero until the action expires, as int.
+        :param priority: The priority of the action. Higher numbers indicate higher priority. As int.
+        :parameter read_blackboard: A function to read from the blackboard, as callable
+            Signature: read_blackboard(key: str) -> any
+        :parameter write_blackboard: A function to write to the blackboard, as callable
+            Signature: write_blackboard(key: str, value: any) -> None
+        """
+        super().__init__(expiry_time, priority, read_blackboard, write_blackboard)
+        if sx is not None: assert(sx>=0 and sx<=7)
+        self.sx = sx
+        if sy is not None: assert(sy>=0 and sy<=7)
+        self.sy = sy
+        # How many times have we attempted to navigate to the target sector?
+        self._attempts = 0
+        self._max_attempts = 2  # If we attempt to navigate to the same sector too many times, we'll give up.
+
+    def isComplete(self):
+        """
+        Return whether this action is complete.
+        :return: True if the action is complete, False otherwise, as boolean.
+        """
+        # Check if the current game sector matches the target sector, and if we are not docked with starbase.
+        if self._world.sector_x == self.sx and self._world.sector_y == self.sy and not self._world.docked:
+            # Navigation was successful
+            return True
+        elif self._attempts > self._max_attempts:
+            # If we have attempted to navigate to the target sector too many times, then we give up.
+            startrek.print_strings(["UndockFromStarbaseAction failed: too many attempts to navigate to the same sector."])
+            return True
+        else:
+            return False
+
+    def execute(self):
+        """
+        Execute the navigation action.
+        :return: None
+        """
+
+        self._attempts += 1
+
+        # If we don't have target sector coordinates, then we need to read them from the blackboard.
+        if self.sx is None:
+            assert(self._read_blackboard is not None)
+            self.sx = self._read_blackboard(BlackboardDatumType.EMPT_SECT_X)    
+        if self.sy is None:
+            assert(self._read_blackboard is not None)
+            self.sy = self._read_blackboard(BlackboardDatumType.EMPT_SECT_Y)    
+        if self.sx is None or self.sy is None:
+            # We don't have target sector coordinates, so we cannot navigate
+            startrek.print_strings(["UndockFromStarbaseAction Cannot navigate to sector: target coordinates not specified."])
+            raise ActionCannotAchieveGoalError(action=self)
+
+        # Make sure we aren't trying to navigate to the same sector
+        assert(self._world.sector_x != self.sx or self._world.sector_y != self.sy)
+
+        # Navigate to target sector
+        print(f"UndockFromStarbaseAction Navigating to sector ({self.sx+1}, {self.sy+1}).")
+
+        # Determine distance to target sector
+        dist = startrek.distance(self._world.sector_x, self._world.sector_y, self.sx, self.sy) / 8.0 + 1.0/8.0  # Add a bit of extra distance to ensure we undock from the starbase sector
+        # Determine direction to target sector
+        direction = startrek.compute_direction(self._world.sector_x, self._world.sector_y, self.sx, self.sy)
+        # Perform navigation
+        (output, obstacle) = startrek._navigation(direction, dist)
+        startrek.print_strings(output)
+        assert(not obstacle)  # We should not hit an obstacle moving to an empty sector near a starbase.
+
+        return None
+
+    def getGoalChange(self, goal=None):
+        """
+        Return the goal insistence change associated with navigating to the target sector.
+        :param goal: The goal to check against, as GameGoal object.
+        :return: The goal insistence change associated with navigating to the target sector, as int.
+        """
+        assert(isinstance(goal, GameGoal))
+        if isinstance(goal, RepairResuplyEnterpriseGoal):
+            # Not to be taken literally, but simply to indicated that completing this action
+            # to undock from a starbase (after docking) will lower the insistence of the RepairResuplyEnterpriseGoal.
             return -GoalInsistence.HIGH
         else:
             return GoalInsistence.ZERO

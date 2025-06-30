@@ -17,12 +17,14 @@ class RepairResuplyEnterpriseGoal(GameGoal):
         super().__init__(name="RepairResuplyEnterprise")
         self._world=WorldInterface()
 
+    # TODO: Investigage how damage is induced to the Enterprise. Have impression that damage is not
+    # occuring in an AI game for some reason.
     def getInsistence(self):
         """
         Return the insistence value of the RepairResuplyEnterprise goal.
         :return: The insistence of the RepairResuplyEnterprise goal, as int
         """
-        # TODO: Also check for damage to the Enterprise
+        # TODO: Also check for other damage to the Enterprise
         if self._world.energy < 500:
             return GoalInsistence.VERY_HIGH
         elif self._world.photon_torpedoes < 1:

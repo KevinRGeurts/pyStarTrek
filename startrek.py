@@ -59,22 +59,6 @@ def play_ai_game():
     """
 
     # Here is a little block of code for debugging purposes.
-    shield_action = startrek_actions.RaiseShieldsAction(shield_energy=500, expiry_time=3, priority=10)
-    while not shield_action.isComplete(): 
-        shield_action.execute()
-    # Navigate to quadrant with klingon ship
-    nav_action = startrek_actions.FindKlingonShipAction()
-    while not nav_action.isComplete(): 
-        nav_action.execute()
-    # Fire phasers multiple times at the klingon ship.
-    seq = startrek_actions.GameActionSequence(expiry_time=3, priority=10)
-    seq.writeToBlackBoard(startrek_actions.BlackboardDatumType.FIRE_PHASERS, True)
-    fire_action = startrek_actions.FirePhasersAction(phaser_energy=100, expiry_time=3, priority=10,
-                                                     read_blackboard=seq.readFromBlackBoard,
-                                                     write_blackboard=seq.writeToBlackBoard)
-    seq.addAction(fire_action)
-    while not seq.isComplete(): 
-        seq.execute()
     # End of debugging block.
 
     game=glob_vars.the_game
@@ -95,7 +79,8 @@ def play_ai_game():
     gob.add_action(attack_act)
     explore_act=startrek_actions.ExploreUnknownRegionAction(expiry_time=10, priority=10)
     gob.add_action(explore_act)
-    find_K_act=startrek_actions.FindStarbaseAction(expiry_time=10, priority=10)
+    find_S_act=startrek_actions.FindStarbaseAction(expiry_time=10, priority=10)
+    gob.add_action(find_S_act)
     
     mgr = ActionManager()
     
@@ -121,13 +106,9 @@ def play_ai_game():
                 if game.destroyed or game.energy == 0 or game.klingons == 0 or game.time_remaining == 0:
                     break
         except ActionCannotAchieveGoalError as e:
-            # TODO: Need to have the Gob also return from chooseAction() the goal that was selected.
-            # Then temporarily remove that goal from the Gob, so that it is not selected again, immediately.
+            # Then temporarily remove the previously chosen goal from the Gob, so that it is not selected again, immediately.
             # As an example, this is to let us shift from selecting a goal to find a Klingon ship
-            # to a goal to expore the galaxy. An alternative might be to remove the action. However,
-            # remember that the actions in the Gob are prototypes, and the one returned in the exception
-            # is an actual action that was deep copied from the prototype. Actually think we want to remove the goal.
-            # Since the problem is that we have two goals for which the insistence is not easily differentiated.
+            # to a goal to expore the galaxy. The problem is that we have two goals for which the insistence is not easily differentiated.
             removed_goal = topGoal
             gob.remove_goal(topGoal)
 
@@ -990,7 +971,6 @@ def _navigation_input(max_warp_factor):
     return (possible, output, direction, dist)
 
 
-# TODO: Return something to indicate hitting an obstacle.
 def _navigation(course, warp_factor):
     """
     Actually navigate the Enterprise.
