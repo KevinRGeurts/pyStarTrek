@@ -1,4 +1,6 @@
 ﻿# standard imports
+import logging
+from pathlib import Path
 from math import pi, cos, sin
 import random
 import strings
@@ -980,11 +982,20 @@ def _navigation(course, warp_factor):
         (1) List of strings to be printed, e.g., using print_strings()
         (2) obstacle encountered? True/False
     """
+
+    logger = None
+    if glob_vars.the_game_options.logging:
+        # Get the logger to use to output navigation info
+        logger = logging.getLogger('startrek_logger.navigation_logger')
+
     game=glob_vars.the_game
     ret_val=[] # list of strings
 
     direction = course
     dist = warp_factor*8
+    if logger:
+        # Log navigation direction and distance
+        logger.info('Direction: %s, Distance: %s', str(direction), str(dist))
     energy_required = int(dist)
     ret_val.append("Warp engines engaged.")
     ret_val.append("")
@@ -1012,9 +1023,15 @@ def _navigation(course, warp_factor):
         y += vy
         quad_x = int(x//8)
         quad_y = int(y//8)
+        if logger:
+            # Log navigation data
+            logger.info('x: %s, y: %s, quad_x: %s, quad_y: %s', str(x), str(y), str(quad_x), str(quad_y))
         if quad_x == game.quadrant_x and quad_y == game.quadrant_y:
             sect_x = int(x%8)
             sect_y = int(y%8)
+            if logger:
+                # Log navigation data
+                logger.info('sect_x: %s, sect_y: %s', str(sect_x), str(sect_y))
             if game.sector[sect_y][sect_x] != sector_type.empty:
                 game.sector_x = last_sect_x
                 game.sector_y = last_sect_y
@@ -1022,6 +1039,9 @@ def _navigation(course, warp_factor):
                 ret_val.append("Encountered obstacle within quadrant.")
                 ret_val.append("")
                 obstacle = True
+                if logger:
+                    # Log navigation data
+                    logger.info('Encountered obstacle within quadrant')
                 break
             last_sect_x = sect_x
             last_sect_y = sect_y
@@ -1323,10 +1343,15 @@ def initialize_game():
 
 
 if __name__ == '__main__':
-    game_ai=False
+    game_opt = glob_vars.the_game_options
+    
+    logger = None # Because we need to have this variable in the outer scope
+    fh = None # Because we need to have this variable in the outer scope
+    
     if len(sys.argv)>1:
         if sys.argv[1:].__contains__('/d'):
             # '/d' = Debug mode
+            game_opt.debugging = True
             # Seed the random number generator.
             # Intended to sync game play with a unittest case.
             sv=1234567890
@@ -1334,6 +1359,23 @@ if __name__ == '__main__':
             print('Running in DEBUG mode...')
         if sys.argv[1:].__contains__('/ai'):
             # '/ai' = AI mode, where game AI will be used to automatically play the game
-            game_ai=True
+            game_opt.play_with_ai = True
             print('Running in AI mode...')
-    run(game_ai)
+        if sys.argv[1:].__contains__('/log'):
+            # '/log' = logging mode, where navigation data will be logged to a file
+            game_opt.logging = True
+            glob_vars.the_game.setup_logging()
+            # TODO: Investigate if the generalization below will work on LINUX
+            # We will always use the same log file name, placed in the user's Documents directory.
+            home_path = Path().home().joinpath('Documents','startrek_nav_data.log')
+            fh = glob_vars.the_game.setup_navigation_logging_file_handler(str(home_path))
+            # Get the navigation data logger so we can remove the file handler later.
+            logger = logging.getLogger('startrek_logger.navigation_logger')
+            print('Running in logging mode...')
+    run(game_opt.play_with_ai)
+
+    # Remove the file handler from the logger, if file handler was created.
+    # This ensures that each time through this function in the same execution of __main__ that the user gets to
+    # decide if logging to file should happen.
+    if fh is not None:
+        logger.removeHandler(fh)

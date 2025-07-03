@@ -690,15 +690,19 @@ class NavigateToQuadrantAction(StarTrekAction):
             dist = 2.0 / 8.0 # A distance of 2 sectors, hopefully enough to get around the obstacle.
             (output, obstacle) = startrek._navigation(direction, dist)
             startrek.print_strings(output)
-            assert(not obstacle)  # We should not hit an obstacle by this turnning back maneuver.
-            # Now, reattempt navigation to the target quadrant.
-            # Determine distance to target quadrant
-            dist = startrek.distance(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
-            # Determine direction to target quadrant
-            direction = startrek.compute_direction(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
-            # Perform navigation
-            (output, obstacle) = startrek._navigation(direction, dist)
-            startrek.print_strings(output)
+            assert(not obstacle)  # We should not hit an obstacle by this turning back maneuver.
+            
+            # Now next attempt to navigate to the target quadrant will be left to the next
+            # invocation of the execute() method.
+            
+            # # Now, reattempt navigation to the target quadrant.
+            # # Determine distance to target quadrant
+            # dist = startrek.distance(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
+            # # Determine direction to target quadrant
+            # direction = startrek.compute_direction(self._world.quadrant_x, self._world.quadrant_y, self.qx, self.qy)
+            # # Perform navigation
+            # (output, obstacle) = startrek._navigation(direction, dist)
+            # startrek.print_strings(output)
 
         return None
 
@@ -1086,7 +1090,7 @@ class UndockFromStarbaseAction(StarTrekAction):
         print(f"UndockFromStarbaseAction Navigating to sector ({self.sx+1}, {self.sy+1}).")
 
         # Determine distance to target sector
-        dist = startrek.distance(self._world.sector_x, self._world.sector_y, self.sx, self.sy) / 8.0 + 1.0/8.0  # Add a bit of extra distance to ensure we undock from the starbase sector
+        dist = startrek.distance(self._world.sector_x, self._world.sector_y, self.sx, self.sy) / 8.0
         # Determine direction to target sector
         direction = startrek.compute_direction(self._world.sector_x, self._world.sector_y, self.sx, self.sy)
         # Perform navigation
