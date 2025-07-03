@@ -144,6 +144,8 @@ class LongRangeScanAction(StarTrekAction):
         Execute the long range scan action.
         :return: None
         """
+        self._is_complete = True  # Mark the action as complete, regardless of results, and even if long range scanner is damaged.
+
         # Check if long range scanner is damaged.
         (possible, output) = startrek.long_range_scan_precheck()
         if not possible:
@@ -203,7 +205,6 @@ class LongRangeScanAction(StarTrekAction):
                     self._write_blackboard(BlackboardDatumType.BASE_QUAD_X, base_quad_x)
                     self._write_blackboard(BlackboardDatumType.BASE_QUAD_Y, base_quad_y)
         
-        self._is_complete = True  # Mark the action as complete after the scan is executed, regardless of results.
         return
 
     def isComplete(self):
@@ -937,6 +938,12 @@ class DockWithStarbaseAction(StarTrekAction):
         Execute the navigation action.
         :return: None
         """
+
+        # Check if we are already docked with a starbase. This could happen if navigation
+        # to the quadrant containing the starbase initiated the docking procedure, without
+        # any need to subsequently navigate within the sector to dock with the starbase.
+        if self._world.docked:
+            return None  # We are already docked, so nothing to do.
 
         self._attempts += 1
 

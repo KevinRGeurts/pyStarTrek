@@ -1849,10 +1849,11 @@ class Test_test_startrek(unittest.TestCase):
         self.assertRaises(SystemExit, run)
 
     def test_run_ai(self):
-        self.assertTrue(False) # Temporary to keep this from running.
         random.seed(1234567890)
-        # NOTE: This is quite a crude test of run().
-        self.assertRaises(NotImplementedError, run, True)
+        # NOTE: This is quite a crude test of run(game_ai=True).
+        run(True)
+        # Assert the game ended because the Enterprise was destroyed.
+        self.assertTrue(glob_vars.the_game.destroyed)
 
     def test_long_range_scan_damaged(self):
         self.maxDiff=None
