@@ -557,6 +557,13 @@ class RaiseShieldsAction(StarTrekAction):
             startrek.print_strings(output)
         return
 
+    def canInterrupt(self):
+        """
+        Return whether RaiseShieldsActions can interrupt other actions.
+        :return: True, as boolean.
+        """
+        return True
+
     def isComplete(self):
         """
         Return whether this action is complete.
@@ -664,7 +671,8 @@ class NavigateToQuadrantAction(StarTrekAction):
             raise ActionCannotAchieveGoalError(action=self)
 
         # Make sure we aren't trying to navigate to the same quadrant
-        assert(self._world.quadrant_x != self.qx or self._world.quadrant_y != self.qy)
+        if self._world.quadrant_x == self.qx and self._world.quadrant_y == self.qy:
+            return None
 
         # Navigate to target quadrant
         print(f"NavigateToQuadrantAction Navigating to quadrant ({self.qx+1}, {self.qy+1}).")
@@ -838,7 +846,7 @@ class FirePhasersAction(StarTrekAction):
                 self._phaser_energy = suggested_phaser_level
                 print(f"FirePhasersAction Using suggested phaser energy level of {self._phaser_energy}.")
             
-        # Check if phaser control is damaged or if we are out of torpedoes.
+        # Check if phaser control is damaged.
         (possible, output) = startrek._phaser_control_precheck()
         if not possible:
             # Phaser control is damaged. Phasers cannot be fired.

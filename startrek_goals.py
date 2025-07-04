@@ -53,7 +53,7 @@ class SurviveGoal(GameGoal):
         Return the insistence value of the Survive goal.
         :return: The insistence of the Survive goal, as int
         """
-        if self._world.shield_level <= 100 \
+        if self._world.shield_level <= 200 \
            and self._world.energy > ABSOLUTE_MINIMUM_SHIP_ENERGY \
            and self._world.quadrant.klingons > 0 \
            and not self._world.docked:

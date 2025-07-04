@@ -561,6 +561,10 @@ class Test_RaiseShieldsAction(unittest.TestCase):
         act_val = act.getGoalChange(goal)
         self.assertEqual(exp_val, act_val)
 
+    def test_canInterrupt(self):
+        act = startrek_actions.RaiseShieldsAction()
+        self.assertTrue(act.canInterrupt())
+
 
 class Test_NavigateToQuadrantAction(unittest.TestCase):
     def test_init(self):

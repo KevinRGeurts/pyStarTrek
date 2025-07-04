@@ -11,7 +11,7 @@ from quadrant import Quadrant
 from utilities import print_strings, compute_direction, distance, input_double
 from gob import Gob
 from action_manager import ActionManager
-from exceptions import ActionCannotAchieveGoalError
+from exceptions import ActionCannotAchieveGoalError, ExcessiveRepeatActionScheduleError
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import startrek_goals
@@ -73,15 +73,15 @@ def play_ai_game():
     gob.add_goal(startrek_goals.ExploreGalaxyGoal())
     gob.add_goal(startrek_goals.RepairResuplyEnterpriseGoal())
     # Create the possible actions for the Star Trek game.
-    find_K_act=startrek_actions.FindKlingonShipAction(expiry_time=10, priority=10)
+    find_K_act=startrek_actions.FindKlingonShipAction(expiry_time=5, priority=1)
     gob.add_action(find_K_act)
-    shield_act=startrek_actions.RaiseShieldsAction(expiry_time=10, priority=10, shield_energy=500)
+    shield_act=startrek_actions.RaiseShieldsAction(expiry_time=3, priority=100, shield_energy=500)
     gob.add_action(shield_act)
-    attack_act=startrek_actions.AttackKlingonShipAction(expiry_time=10, priority=10)
+    attack_act=startrek_actions.AttackKlingonShipAction(expiry_time=5, priority=10)
     gob.add_action(attack_act)
-    explore_act=startrek_actions.ExploreUnknownRegionAction(expiry_time=10, priority=10)
+    explore_act=startrek_actions.ExploreUnknownRegionAction(expiry_time=5, priority=1)
     gob.add_action(explore_act)
-    find_S_act=startrek_actions.FindStarbaseAction(expiry_time=10, priority=10)
+    find_S_act=startrek_actions.FindStarbaseAction(expiry_time=10, priority=1)
     gob.add_action(find_S_act)
     
     mgr = ActionManager()
@@ -92,21 +92,20 @@ def play_ai_game():
     
         # Choose the best action to execute.
         (bestAct, topGoal) = gob.chooseAction()
-        bestAct.expiry_time = mgr.currentTime + 10  # Set the expiry time for the action.
-        mgr.scheduleAction(bestAct)
+        bestAct.expiry_time = mgr.currentTime + bestAct.expiry_time  # Set the expiry time for the action.
+        try:
+            mgr.scheduleAction(bestAct)
+        except ExcessiveRepeatActionScheduleError as e:
+            pass
 
         # If there is any goal that was temporarily removed, we need to add it back to the Gob.
         if removed_goal is not None:
             gob.add_goal(removed_goal)
             removed_goal = None
 
-        # Continue to execute the action manager until it is empty.
-        # In this context, one action, combination, or sequence should have completely executed.
+        # Eexecute the action manager.
         try:
-            while len(mgr) > 0:
-                mgr.execute()
-                if game.destroyed or game.energy == 0 or game.klingons == 0 or game.time_remaining == 0:
-                    break
+            mgr.execute()
         except ActionCannotAchieveGoalError as e:
             # Then temporarily remove the previously chosen goal from the Gob, so that it is not selected again, immediately.
             # As an example, this is to let us shift from selecting a goal to find a Klingon ship
