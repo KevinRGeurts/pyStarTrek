@@ -34,9 +34,6 @@
     <Compile Include="glob_vars.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="gob.py">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="quadrant.py" />
     <Compile Include="startrek.py" />
     <Compile Include="startrek_actions.py">
@@ -77,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Documentation\AI_GoalOrientedBehavior_Design.txt" />
+    <Content Include="Documentation\Test_Aid_compute_direction.xlsx" />
     <Content Include="README.rst" />
   </ItemGroup>
   <ItemGroup>
