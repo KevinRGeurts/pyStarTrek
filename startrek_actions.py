@@ -3,13 +3,13 @@ from enum import StrEnum
 
 # local imports
 from math import exp
-from game_action import GameAction, GameActionSequence
-from game_goal import GameGoal, GoalInsistence
+from pyGameAIFoundation.game_action import GameAction, GameActionSequence
+from pyGameAIFoundation.game_goal import GameGoal, GoalInsistence
 from startrek_goals import DestroyKlingonShipGoal, ExploreGalaxyGoal, SurviveGoal, FindKlingonShipGoal
 from startrek_goals import RepairResuplyEnterpriseGoal, ABSOLUTE_MINIMUM_SHIP_ENERGY
 from utilities import StarTrekCourse
 from world_interface import WorldInterface
-from exceptions import ActionCannotAchieveGoalError
+from pyGameAIFoundation.exceptions import ActionCannotAchieveGoalError
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
@@ -325,6 +325,8 @@ class FindUnscannedQuadrantAction(StarTrekAction):
         # And further, finding one that would maximize the number of new quadrants scanned.
         # As is, this action will waste energy (to navigate) and time.
 
+        self._is_complete = True  # Mark the action as complete, regardless of results, and even if computer is damaged
+
         # Check if computer control is damaged.
         (possible, output) = startrek._computer_controls_precheck()
         if not possible:
@@ -358,7 +360,6 @@ class FindUnscannedQuadrantAction(StarTrekAction):
                     self._write_blackboard(BlackboardDatumType.UNSCANNED_QUAD_X, unscanned_quad_x)
                     self._write_blackboard(BlackboardDatumType.UNSCANNED_QUAD_Y, unscanned_quad_y)
         
-        self._is_complete = True  # Mark the action as complete after the galactic record is checked, regardless of results.
         return
 
     def isComplete(self):
@@ -408,6 +409,8 @@ class CheckGalacticRecordAction(StarTrekAction):
         # TODO: An improvement here would be to find the klingon ship or starbase that is closest to
         # the Enterprise's current quadrant, rather than just taking the first one found in the galactic record.
         # As is, this action will waste energy (to navigate) and time.
+
+        self._is_complete = True  # Mark the action as complete, regardless of results, and even if the computer is damaged.
 
         # Check if computer control is damaged.
         (possible, output) = startrek._computer_controls_precheck()
@@ -464,9 +467,8 @@ class CheckGalacticRecordAction(StarTrekAction):
                 print(f"CheckGalacticRecordAction found starbase at quadrant ({base_quad_x+1}, {base_quad_y+1}).")
                 if self._write_blackboard is not None:
                     self._write_blackboard(BlackboardDatumType.BASE_QUAD_X, base_quad_x)
-                    self._write_blackboard(BlackboardDatumType.BASE_QUAD_Y, base_quad_y)
-        
-        self._is_complete = True  # Mark the action as complete after the galactic record is checked, regardless of results.
+                    self._write_blackboard(BlackboardDatumType.BASE_QUAD_Y, base_quad_y)        
+
         return
 
     def isComplete(self):

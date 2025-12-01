@@ -5,7 +5,8 @@
     <ProjectGuid>380871c9-84bc-4191-981c-22666a36a4f5</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>startrek.py</StartupFile>
-    <SearchPath>..\GameAIFoundation</SearchPath>
+    <SearchPath>
+    </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <Name>StarTrek</Name>
@@ -16,6 +17,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <CommandLineArguments>/d /ai</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -76,6 +78,17 @@
   <ItemGroup>
     <Content Include="Documentation\AI_GoalOrientedBehavior_Design.txt" />
     <Content Include="README.rst" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="env\">
+      <Id>env</Id>
+      <Version>3.12</Version>
+      <Description>env (Python 3.12)</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X64</Architecture>
+    </Interpreter>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

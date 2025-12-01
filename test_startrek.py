@@ -1853,7 +1853,7 @@ class Test_test_startrek(unittest.TestCase):
         # NOTE: This is quite a crude test of run(game_ai=True).
         run(True)
         # Assert the game ended because all Klingons were destroyed
-        self.assertTrue(glob_vars.the_game.klingons == 0
+        self.assertTrue(glob_vars.the_game.klingons == 0)
 
     def test_long_range_scan_damaged(self):
         self.maxDiff=None

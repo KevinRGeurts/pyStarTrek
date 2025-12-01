@@ -9,9 +9,9 @@ import sys
 # local imports
 from quadrant import Quadrant
 from utilities import print_strings, compute_direction, distance, input_double
-from gob import Gob
-from action_manager import ActionManager
-from exceptions import ActionCannotAchieveGoalError, ExcessiveRepeatActionScheduleError
+from pyGameAIFoundation.gob import Gob
+from pyGameAIFoundation.action_manager import ActionManager
+from pyGameAIFoundation.exceptions import ActionCannotAchieveGoalError, ExcessiveRepeatActionScheduleError
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import startrek_goals
@@ -610,6 +610,9 @@ def induce_damage(item):
     ret_val=[] # list of strings
     if random.randint(0, 6) > 0:
         return ret_val
+    if glob_vars.the_game_options.cheat_no_damage:
+        ret_val.append("Cheat enabled: No damage induced.")
+        return ret_val  # If cheat is enabled, no damage is induced.
     damage = 1 + random.randint(0, 4)
     if item < 0:
         item = random.randint(0, 6)
@@ -1353,7 +1356,8 @@ if __name__ == '__main__':
             game_opt.debugging = True
             # Seed the random number generator.
             # Intended to sync game play with a unittest case.
-            sv=1234567890
+            # sv=1234567890
+            sv=1234567893
             random.seed(sv)
             print('Running in DEBUG mode...')
         if sys.argv[1:].__contains__('/ai'):
@@ -1371,6 +1375,11 @@ if __name__ == '__main__':
             # Get the navigation data logger so we can remove the file handler later.
             logger = logging.getLogger('startrek_logger.navigation_logger')
             print('Running in logging mode...')
+        if sys.argv[1:].__contains__('/no_damage'):
+            # '/no_damage' = no damage cheat mode, where the Enterprise systems will not be damaged
+            # Note: Klingon fire can still destroy the Enterprise, when shield energy is zero.
+            game_opt.cheat_no_damage = True
+            print('Running with no damage cheat enabled...')
     run(game_opt.play_with_ai)
 
     # Remove the file handler from the logger, if file handler was created.

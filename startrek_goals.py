@@ -1,7 +1,7 @@
 # standard imports
 
 # local imports
-from game_goal import GameGoal, GoalInsistence
+from pyGameAIFoundation.game_goal import GameGoal, GoalInsistence
 from world_interface import WorldInterface
 
 ABSOLUTE_MINIMUM_SHIP_ENERGY = 200 # Do not take actions in pursuit of goals that will leave the ship with less than this amount of energy.

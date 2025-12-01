@@ -92,7 +92,7 @@ class Game():
         fh.setFormatter(formatter)
         # Add the file handler to the logger
         logger.addHandler(fh)
-        # Add "header" information to the hit/stand logging file
+        # Add "header" information to the navigation data logging file
         # TODO: Decide what naviagtion data to log, and provide header information for that.
         # logger.info('%s,%s,%s', 'HAND', 'SHOW', 'CLASS' )
         
@@ -110,5 +110,6 @@ class GameOptions():
         self.debugging = False
         self.play_with_ai = False
         self.logging = False
+        self.cheat_no_damage = False
 
 
