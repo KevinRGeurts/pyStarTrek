@@ -17,6 +17,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <CommandLineArguments>/d</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -27,17 +28,43 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="game.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="glob_vars.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="quadrant.py" />
     <Compile Include="startrek.py" />
     <Compile Include="strings.py" />
+    <Compile Include="test_quadrant.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="test_startrek.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="test_utilities.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="utilities.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Documentation\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Documentation\Test_Aid_compute_direction.xlsx" />
     <Content Include="README.rst" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="env\">
+      <Id>env</Id>
+      <Version>3.12</Version>
+      <Description>env (Python 3.12)</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X64</Architecture>
+    </Interpreter>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

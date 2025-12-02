@@ -1,5 +1,5 @@
 # standard imports
-from tkinter import COMMAND
+from calendar import c
 import unittest
 import random
 import sys
@@ -7,25 +7,19 @@ from io import StringIO
 from unittest.mock import patch
 
 # local imports
-from startrek import Quadrant, SectorType, KlingonShip, Game, game, induce_damage, initialize_game, is_sector_region_empty, klingons_attack, repair_damage
-from startrek import distance, compute_direction, print_game_status, command_prompt, navigation_calculator
-from startrek import input_double, phaser_controls, sector_type, generate_sector, read_sector
-from startrek import short_range_scan, is_docking_location, is_sector_region_empty, print_strings, print_mission
+from startrek import SectorType, KlingonShip, induce_damage, initialize_game, is_sector_region_empty, klingons_attack, repair_damage
+from startrek import print_game_status, command_prompt
+from startrek import phaser_controls, sector_type, generate_sector, read_sector
+from startrek import short_range_scan, is_docking_location, is_sector_region_empty, print_mission
 from startrek import print_sector_row, print_sector, long_range_scan, run, _torpedo_control_precheck, _torpedo_controls_input
 from startrek import _torpedo_control_launch, _shield_controls_precheck
-from strings import computerStrings
+from startrek import _navigation
+import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.
 
 # TODO: Consider factoring out some common setup, like initize_game(), generate_sector(), and separate the tests that
 # use that setup into a different unittest.TestCase child.
 
 class Test_test_startrek(unittest.TestCase):
-
-    def test_Quadrant_init(self):
-        quad = Quadrant()
-        exp_val=('', 0, 0, False, False)
-        act_val=(quad.name, quad.klingons, quad.stars, quad.starbase, quad.scanned)
-        self.assertEqual(exp_val, act_val)
-
     def test_SectorType_init(self):
         st = SectorType()
         exp_val=(1, 2, 3, 4, 5)
@@ -39,7 +33,7 @@ class Test_test_startrek(unittest.TestCase):
         self.assertEqual(exp_val, act_val)
 
     def test_Game_init(self):
-        gm = Game()
+        gm = glob_vars.Game()
         exp_val=(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,False,False,0,0,64,64,0)
         act_val=(gm.star_date,
                  gm.time_remaining,
@@ -73,7 +67,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_initialize_game(self):
         random.seed(1234567890)
         initialize_game()
-        gm=game
+        gm=glob_vars.the_game
         exp_val=(2266,41,3000,18,2,2,7,3,4,0,0,0,0,0,0,0,0,10,False,False,0,0,64,64,0)
         act_val=(gm.star_date,
                  gm.time_remaining,
@@ -108,7 +102,8 @@ class Test_test_startrek(unittest.TestCase):
             for i in range(0,8):
                     act_val+=gm.quadrants[j][i].klingons
         exp_val = gm.klingons
-        self.assertEqual(exp_val, act_val)        # Test that total number of Quadrants in list gm.quadrants with starbase=True == gm.starbases
+        self.assertEqual(exp_val, act_val)
+        # Test that total number of Quadrants in list gm.quadrants with starbase=True == gm.starbases
         # Don't understand why this list comprehension doesn't work
         # act_val = len([[q for q in lofq if q.starbase==True] for lofq in gm.quadrants])
         # But do this instead:
@@ -126,7 +121,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         gm.destroyed=True
         exp_val='MISSION FAILED: ENTERPRISE DESTROYED!!!'
         print_game_status()
@@ -142,7 +137,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         gm.energy=0
         exp_val='MISSION FAILED: ENTERPRISE RAN OUT OF ENERGY.'
@@ -159,7 +154,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         gm.klingons=0
         exp_val='MISSION ACCOMPLISHED: ALL KLINGON SHIPS DESTROYED. WELL DONE!!!'
@@ -176,7 +171,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         gm.time_remaining=0
         exp_val='MISSION FAILED: ENTERPRISE RAN OUT OF TIME.'
@@ -224,7 +219,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         self.assertTrue(gm.computer_damage==0)
         exp_val='Enter command: '
@@ -234,8 +229,9 @@ class Test_test_startrek(unittest.TestCase):
         exp_val+='tor = Photon Torpedo Calculator\n'
         exp_val+='bas = Starbase Calculator\n'
         exp_val+='nav = Navigation Calculator\n'
-        exp_val+='Enter computer command: '
+        exp_val+='Enter computer command: \n'
         exp_val+='Invalid computer command.\n'
+        exp_val+='\n'
         exp_val+='The main computer is malfunctioning.'
         command_prompt()
         # Get the captured output
@@ -255,7 +251,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Damage the computer
         gm.computer_damage=1
@@ -279,7 +275,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -312,7 +308,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -344,7 +340,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -375,7 +371,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -406,7 +402,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -437,7 +433,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -469,7 +465,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -501,7 +497,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -534,7 +530,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -559,7 +555,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         self.assertFalse(klingons_attack())
@@ -571,7 +567,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_starbase_calculator(self):
         random.seed(1234567890)
         # Start the game and navigate to quadrant with starbase
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         command_prompt()
         # Redirect standard output to a buffer
@@ -607,7 +603,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         exp_val='Enter command: '
@@ -634,7 +630,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_torpedo_calculator_klingon(self):
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt()
@@ -669,7 +665,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Enter command: '
         exp_val+='--- Main Computer --------------\n'
@@ -705,7 +701,7 @@ class Test_test_startrek(unittest.TestCase):
         self.maxDiff=None
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # With this command_prompt() call, we will request a long range scan
         command_prompt()
@@ -747,7 +743,7 @@ class Test_test_startrek(unittest.TestCase):
         self.assertEqual(exp_val, act_val)
 
     def test_phaser_controls_damaged(self):
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         gm.phaser_damage=1
         exp_val=[]
@@ -760,7 +756,7 @@ class Test_test_startrek(unittest.TestCase):
 
     def test_phaser_controls_no_klingons(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         exp_val=[]
@@ -778,7 +774,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_phaser_controls_klingon_invalid_phaser_energy(self):
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt()
@@ -805,7 +801,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_phaser_controls_klingon_too_low_phaser_energy(self):
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt()
@@ -832,7 +828,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_phaser_controls_klingon_too_high_phaser_energy(self):
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt()
@@ -859,7 +855,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_phaser_controls_klingon_destroyed(self):
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt()
@@ -891,7 +887,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_phaser_controls_klingon_damaged(self):
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt()
@@ -919,7 +915,7 @@ class Test_test_startrek(unittest.TestCase):
     # The patch should result in issuing a 'she' command, then an invalid ('foo') shield control command
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -948,7 +944,7 @@ class Test_test_startrek(unittest.TestCase):
     # then an invalid amount of energy to add ('foo')
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -978,7 +974,7 @@ class Test_test_startrek(unittest.TestCase):
     # then an invalid amount of energy to add (5000) because it is too high
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -1008,7 +1004,7 @@ class Test_test_startrek(unittest.TestCase):
     # then an invalid amount of energy to add (0) because it is too low
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -1038,7 +1034,7 @@ class Test_test_startrek(unittest.TestCase):
     # then a valid amount of energy to add (500)
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -1068,7 +1064,7 @@ class Test_test_startrek(unittest.TestCase):
     # then a valid amount of energy to add (500). The a 'she', 'sub' to subtract 250.
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # This command_prompt() will eat the she/add/500 sequence
         command_prompt()
@@ -1100,7 +1096,7 @@ class Test_test_startrek(unittest.TestCase):
     # then a valid amount of energy to add (500). The a 'she', 'sub' to subtract an amount that exceeds 500.
         random.seed(1234567890)
         # Start the game and navigate to quadrant with klingon
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # This command_prompt() will eat the she/add/500 sequence
         command_prompt()
@@ -1131,7 +1127,7 @@ class Test_test_startrek(unittest.TestCase):
         captured_output = StringIO()
         sys.stdout = captured_output
         # Run the test
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         (output,something)=klingons_attack()
@@ -1147,7 +1143,7 @@ class Test_test_startrek(unittest.TestCase):
         self.maxDiff=None
         random.seed(1234567890)
         # Start the game and navigate to quadrant with starbase
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # This command_prompt() will eat the she/add/500 sequence
@@ -1197,7 +1193,7 @@ class Test_test_startrek(unittest.TestCase):
         self.maxDiff=None
         random.seed(1234567890)
         # Start the game and navigate to quadrant with starbase
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # This command_prompt() will eat the nav/6/1 sequence
@@ -1241,7 +1237,7 @@ class Test_test_startrek(unittest.TestCase):
         self.maxDiff=None
         random.seed(1234567890)
         # Start the game and navigate to quadrant with starbase
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # This command_prompt() will eat the nav/6/1 sequence
@@ -1309,7 +1305,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_is_docking_location(self):
         random.seed(1234567890)
         # Start the game and navigate to quadrant with starbase
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
 
@@ -1337,7 +1333,7 @@ class Test_test_startrek(unittest.TestCase):
 
     # TODO: Also check that repair messages are printed
     def test_repair_damage(self):
-        gm=game
+        gm=glob_vars.the_game
         gm.navigation_damage=2
         gm.short_range_scan_damage=1
         gm.long_range_scan_damage=1
@@ -1389,7 +1385,7 @@ class Test_test_startrek(unittest.TestCase):
         initialize_game()
         random.seed(1234567896)
         induce_damage(-1)
-        gm=game
+        gm=glob_vars.the_game
         exp_val=(0,0,0,0,4,0,0)
         act_val=(gm.navigation_damage,
                 gm.short_range_scan_damage,
@@ -1404,7 +1400,7 @@ class Test_test_startrek(unittest.TestCase):
         random.seed(1234567891)
         initialize_game()
         induce_damage(0)
-        gm=game
+        gm=glob_vars.the_game
         exp_val=(3,0,0,0,0,0,0)
         act_val=(gm.navigation_damage,
                 gm.short_range_scan_damage,
@@ -1419,7 +1415,7 @@ class Test_test_startrek(unittest.TestCase):
         random.seed(1234567891)
         initialize_game()
         induce_damage(1)
-        gm=game
+        gm=glob_vars.the_game
         exp_val=(0,3,0,0,0,0,0)
         act_val=(gm.navigation_damage,
                 gm.short_range_scan_damage,
@@ -1434,7 +1430,7 @@ class Test_test_startrek(unittest.TestCase):
         random.seed(1234567891)
         initialize_game()
         induce_damage(2)
-        gm=game
+        gm=glob_vars.the_game
         exp_val=(0,0,3,0,0,0,0)
         act_val=(gm.navigation_damage,
                 gm.short_range_scan_damage,
@@ -1449,7 +1445,7 @@ class Test_test_startrek(unittest.TestCase):
         random.seed(1234567891)
         initialize_game()
         induce_damage(3)
-        gm=game
+        gm=glob_vars.the_game
         exp_val=(0,0,0,3,0,0,0)
         act_val=(gm.navigation_damage,
                 gm.short_range_scan_damage,
@@ -1464,7 +1460,7 @@ class Test_test_startrek(unittest.TestCase):
         random.seed(1234567891)
         initialize_game()
         induce_damage(4)
-        gm=game
+        gm=glob_vars.the_game
         exp_val=(0,0,0,0,3,0,0)
         act_val=(gm.navigation_damage,
                 gm.short_range_scan_damage,
@@ -1479,7 +1475,7 @@ class Test_test_startrek(unittest.TestCase):
         random.seed(1234567891)
         initialize_game()
         induce_damage(5)
-        gm=game
+        gm=glob_vars.the_game
         exp_val=(0,0,0,0,0,3,0)
         act_val=(gm.navigation_damage,
                 gm.short_range_scan_damage,
@@ -1494,7 +1490,7 @@ class Test_test_startrek(unittest.TestCase):
         random.seed(1234567891)
         initialize_game()
         induce_damage(6)
-        gm=game
+        gm=glob_vars.the_game
         exp_val=(0,0,0,0,0,0,3)
         act_val=(gm.navigation_damage,
                 gm.short_range_scan_damage,
@@ -1505,63 +1501,9 @@ class Test_test_startrek(unittest.TestCase):
                 gm.phaser_damage)
         self.assertEqual(exp_val, act_val)
 
-    def test_distance(self):
-        exp_val=7.071067812
-        act_val=distance(2,3,7,8)
-        self.assertAlmostEqual(exp_val, act_val)
-
-    def test_compute_direction(self):
-        # x1=x2, y1<y2
-        exp_val=7
-        act_val=compute_direction(2,5,2,7)
-        self.assertAlmostEqual(exp_val, act_val)
-        # x1=x2, y1>y2
-        exp_val=3
-        act_val=compute_direction(2,7,2,5)
-        self.assertAlmostEqual(exp_val, act_val)
-        # x1<x2, y1=y2
-        exp_val=1
-        act_val=compute_direction(2,7,4,7)
-        self.assertAlmostEqual(exp_val, act_val)
-        # x1>x2, y1=y2
-        exp_val=5
-        act_val=compute_direction(4,7,2,7)
-        self.assertAlmostEqual(exp_val, act_val)
-        # x1>x2, y1<y2
-        exp_val=6
-        act_val=compute_direction(4,5,2,7)
-        self.assertAlmostEqual(exp_val, act_val)
-        # x1>x2, y1>y2
-        exp_val=4
-        act_val=compute_direction(4,7,2,5)
-        self.assertAlmostEqual(exp_val, act_val)
-        # x1<x2, y1<y2
-        exp_val=8
-        act_val=compute_direction(2,5,4,7)
-        self.assertAlmostEqual(exp_val, act_val)
-        # x1<x2, y1>y2
-        exp_val=2
-        act_val=compute_direction(2,7,4,5)
-        self.assertAlmostEqual(exp_val, act_val)
-
-    # Apply a patch() decorator to replace keyboard input from user with a string.
-    # The patch should result in valid input of a float
-    @patch('sys.stdin', StringIO('7.56\n'))
-    def test_input_double(self):
-        exp_val=7.56
-        act_val=input_double('Enter a valid floating point number:')
-        self.assertAlmostEqual(exp_val, act_val)
-
-    # Apply a patch() decorator to replace keyboard input from user with a string.
-    # The patch should result in invalid input
-    @patch('sys.stdin', StringIO('foo\n'))
-    def test_input_double_invalid(self):
-        act_val=input_double('Enter a valid floating point number:')
-        self.assertFalse(act_val)
-
     def test_read_sector(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         short_range_scan() # Should not really be needed, but helpful for debugging test
@@ -1574,7 +1516,7 @@ class Test_test_startrek(unittest.TestCase):
 
     def test_is_docking_location(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # Place a starbase at [row=4, 0-indexed][row=5, 0-indexed]=[x=6,y=5]
@@ -1599,7 +1541,7 @@ class Test_test_startrek(unittest.TestCase):
     @patch('sys.stdin', StringIO('nav\n1\n6\n'))
     def test_navigation_damaged(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         gm.navigation_damage=1
         # Redirect standard output to a buffer
@@ -1625,7 +1567,7 @@ class Test_test_startrek(unittest.TestCase):
     @patch('sys.stdin', StringIO('nav\n0.5\n'))
     def test_navigation_invalid_course_low(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -1647,7 +1589,7 @@ class Test_test_startrek(unittest.TestCase):
     @patch('sys.stdin', StringIO('nav\n9.1\n'))
     def test_navigation_invalid_course_high(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -1669,7 +1611,7 @@ class Test_test_startrek(unittest.TestCase):
     @patch('sys.stdin', StringIO('nav\nfoo\n'))
     def test_navigation_invalid_course_invalid(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -1692,7 +1634,7 @@ class Test_test_startrek(unittest.TestCase):
     @patch('sys.stdin', StringIO('nav\n1\n0.05\n'))
     def test_navigation_warp_factor_low(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -1716,7 +1658,7 @@ class Test_test_startrek(unittest.TestCase):
     @patch('sys.stdin', StringIO('nav\n1\nfoo\n'))
     def test_navigation_warp_factor_invalid(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Redirect standard output to a buffer
         captured_output = StringIO()
@@ -1740,7 +1682,7 @@ class Test_test_startrek(unittest.TestCase):
     @patch('sys.stdin', StringIO('nav\n1\n6\n'))
     def test_navigation_insufficent_energy(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         # Set energy very low, so it is insufficent for requested warp factor
         gm.energy=40
@@ -1767,7 +1709,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_navigation_successful(self):
         self.maxDiff=None
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # Redirect standard output to a buffer
@@ -1805,7 +1747,7 @@ class Test_test_startrek(unittest.TestCase):
     def test_navigation_obstacle(self):
         self.maxDiff=None
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # Redirect standard output to a buffer
@@ -1838,10 +1780,29 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
+    def test_under_navigation_obstacle(self):
+        random.seed(1234567890)
+        gm=glob_vars.the_game
+        initialize_game()
+        generate_sector()
+        (output, obstacle)=_navigation(3, 0.3)
+        exp_val = True
+        act_val = obstacle
+        self.assertEqual(exp_val, act_val)
+
+    def test_under_navigation_no_obstacle(self):
+        random.seed(1234567890)
+        gm=glob_vars.the_game
+        initialize_game()
+        generate_sector()
+        (output, obstacle)=_navigation(1, 0.3)
+        exp_val = False
+        act_val = obstacle
+        self.assertEqual(exp_val, act_val)
         
     def test_is_sector_region_empty(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         short_range_scan()
@@ -1884,13 +1845,13 @@ class Test_test_startrek(unittest.TestCase):
     def test_run(self):
         random.seed(1234567890)
         # Run the game. Shoud raise a SystemExit exception
-        # NOTE: This is quite a crude test of runI()
+        # NOTE: This is quite a crude test of run()
         self.assertRaises(SystemExit, run)
 
     def test_long_range_scan_damaged(self):
         self.maxDiff=None
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # Artificially damager the long range scanners
@@ -1902,7 +1863,7 @@ class Test_test_startrek(unittest.TestCase):
 
     def test_long_range_scan(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         exp_val=[]
@@ -1920,7 +1881,7 @@ class Test_test_startrek(unittest.TestCase):
 
     def test_generate_sector(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         exp_val=[[1, 1, 2, 1, 1, 1, 1, 1],
@@ -1931,13 +1892,13 @@ class Test_test_startrek(unittest.TestCase):
                     [1, 1, 1, 1, 1, 2, 1, 2],
                     [1, 2, 1, 1, 2, 1, 2, 1],
                     [1, 1, 1, 1, 1, 1, 1, 1]]
-        act_val=game.sector
+        act_val=gm.sector
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
     def test_short_range_scan(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         exp_val=[]
@@ -1959,7 +1920,7 @@ class Test_test_startrek(unittest.TestCase):
 
     def test_print_sector(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         exp_val=[]
@@ -1980,7 +1941,7 @@ class Test_test_startrek(unittest.TestCase):
 
     def test_print_sector_row(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         sb='foo'
@@ -1992,7 +1953,7 @@ class Test_test_startrek(unittest.TestCase):
 
     def test_print_mission(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         exp_val='Mission: Destroy 18 Klingon ships in 41 stardates with 2 starbases.'
         # Redirect standard output to a buffer
@@ -2007,28 +1968,9 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertEqual(exp_val, act_val)
 
-    def test_print_strings(self):
-        exp_val='--- Main Computer --------------\n'
-        exp_val+='rec = Cumulative Galatic Record\n'
-        exp_val+='sta = Status Report\n'
-        exp_val+='tor = Photon Torpedo Calculator\n'
-        exp_val+='bas = Starbase Calculator\n'
-        exp_val+='nav = Navigation Calculator'
-        # Redirect standard output to a buffer
-        captured_output = StringIO()
-        sys.stdout = captured_output
-        # Print the string
-        print_strings(computerStrings)
-        # Get the captured output
-        act_val = captured_output.getvalue().strip()
-        # Reset the standard output
-        sys.stdout = sys.__stdout__
-        # Assert the output matches the expected value
-        self.assertEqual(exp_val, act_val)
-
     def test_torpedo_precheck_damaged(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # Artificially damage the torpedo control
@@ -2043,7 +1985,7 @@ class Test_test_startrek(unittest.TestCase):
 
     def test_torpedo_precheck_no_torpedos_left(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # Artificially use up all torpedoes
@@ -2058,7 +2000,7 @@ class Test_test_startrek(unittest.TestCase):
 
     def test_torpedo_precheck_no_klingons(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         # Note: There are no klingons in this sector, given teh random seed.
@@ -2069,7 +2011,6 @@ class Test_test_startrek(unittest.TestCase):
         act_val = _torpedo_control_precheck()
         # Assert the output matches the expected value
         self.assertTupleEqual(exp_val, act_val)
-
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result issuing 3 invalid torpedo directions ['foo', 9.1, 0.9]
@@ -2093,13 +2034,12 @@ class Test_test_startrek(unittest.TestCase):
         # Assert the output matches the expected value
         self.assertTupleEqual(exp_val, act_val)
 
-
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in raising shields and then navigating to a sector with a klingon.
     @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n5\n1\n'))
     def test_launch_torpedo_hit_star(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt() # Raise shields
@@ -2115,16 +2055,17 @@ class Test_test_startrek(unittest.TestCase):
         exp_val.append("Enterprise hit by ship at sector [5,1]. Shields dropped to 320.")
         exp_val.append('')
         # Launch torpedo that will hit a star
-        act_val = _torpedo_control_launch(3.5)
+        (act_val, captured, missed) = _torpedo_control_launch(3.5)
         self.assertEqual(exp_val, act_val)
-
+        self.assertTrue(captured)  # The torpedo was captured by the star's gravity
+        self.assertFalse(missed)
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in raising shields and then navigating to a sector with a klingon and a starbase
     @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n5\n1\n'))
     def test_launch_torpedo_hit_starbase(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt() # Raise shields
@@ -2143,16 +2084,17 @@ class Test_test_startrek(unittest.TestCase):
         exp_val.append("Enterprise hit by ship at sector [5,1]. Shields dropped to 320.")
         exp_val.append('')
         # Launch torpedo that will hit a starbase
-        act_val = _torpedo_control_launch(8.5)
+        (act_val, captured, missed) = _torpedo_control_launch(8.5)
         self.assertEqual(exp_val, act_val)
-
+        self.assertFalse(captured)
+        self.assertFalse(missed)
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in raising shields and then navigating to a sector with a klingon and a starbase
     @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n5\n1\n'))
     def test_launch_torpedo_hit_klingon(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt() # Raise shields
@@ -2169,16 +2111,17 @@ class Test_test_startrek(unittest.TestCase):
         exp_val.append("Klingon ship destroyed at sector [5,1].")
         exp_val.append('')
         # Launch torpedo that will hit a klingon
-        act_val = _torpedo_control_launch(2.69)
+        (act_val, captured, missed) = _torpedo_control_launch(2.69)
         self.assertEqual(exp_val, act_val)
-
+        self.assertFalse(captured)
+        self.assertFalse(missed)
 
     # Apply a patch() decorator to replace keyboard input from user with a string.
     # The patch should result in raising shields and then navigating to a sector with a klingon and a starbase
     @patch('sys.stdin', StringIO('she\nadd\n500\nnav\n5\n1\n'))
     def test_launch_torpedo_hit_nothing(self):
         random.seed(1234567890)
-        gm=game
+        gm=glob_vars.the_game
         initialize_game()
         generate_sector()
         command_prompt() # Raise shields
@@ -2194,11 +2137,13 @@ class Test_test_startrek(unittest.TestCase):
         exp_val.append("Enterprise hit by ship at sector [5,1]. Shields dropped to 320.")
         exp_val.append('')
         # Launch torpedo that will hit nothing
-        act_val = _torpedo_control_launch(7)
+        (act_val, captured, missed) = _torpedo_control_launch(7)
         self.assertEqual(exp_val, act_val)
+        self.assertFalse(captured)
+        self.assertTrue(missed)
 
     def test_shields_precheck_damaged(self):
-        gm=game
+        gm=glob_vars.the_game
         # Artificially damage the shield control
         gm.shield_control_damage=1
         exp_val=[] # list of strings
