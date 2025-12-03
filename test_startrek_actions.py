@@ -5,12 +5,12 @@ import unittest
 import random
 
 # local imports
-from game_action import GameActionSequence
-from game_goal import GoalInsistence, GameGoal
+from pyGameAIFoundation.game_action import GameActionSequence
+from pyGameAIFoundation.game_goal import GoalInsistence, GameGoal
 from world_interface import WorldInterface
 from startrek_goals import DestroyKlingonShipGoal, SurviveGoal, FindKlingonShipGoal, ExploreGalaxyGoal
 from startrek_goals import RepairResuplyEnterpriseGoal, ABSOLUTE_MINIMUM_SHIP_ENERGY
-from exceptions import ActionCannotAchieveGoalError
+from pyGameAIFoundation.exceptions import ActionCannotAchieveGoalError
 import startrek_actions  # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import startrek # Leave this import like this exactly, so that a circle import is avoided with startrek.py.
 import glob_vars # Leave this import like this exactly, so that global variables in it are actually global.

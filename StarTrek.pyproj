@@ -75,7 +75,7 @@
   <ItemGroup>
     <Content Include="Documentation\AI_GoalOrientedBehavior_Design.txt" />
     <Content Include="Documentation\Test_Aid_compute_direction.xlsx" />
-    <Content Include="README.rst" />
+    <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <Interpreter Include="env\">

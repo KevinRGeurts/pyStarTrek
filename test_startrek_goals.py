@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 # local imports
 from world_interface import WorldInterface
-from game_goal import GoalInsistence
+from pyGameAIFoundation.game_goal import GoalInsistence
 from startrek_goals import SurviveGoal, FindKlingonShipGoal, DestroyKlingonShipGoal, ExploreGalaxyGoal
 from startrek_goals import RepairResuplyEnterpriseGoal
 from startrek_actions import RaiseShieldsAction
