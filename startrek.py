@@ -1356,8 +1356,8 @@ if __name__ == '__main__':
             game_opt.debugging = True
             # Seed the random number generator.
             # Intended to sync game play with a unittest case.
-            # sv=1234567890
-            sv=1234567893
+            sv=1234567890 # With this seed, an AI game will end will all Klingons destroyed.
+            # sv=1234567893 # With this seed, an AI game will produce an error.
             random.seed(sv)
             print('Running in DEBUG mode...')
         if sys.argv[1:].__contains__('/ai'):

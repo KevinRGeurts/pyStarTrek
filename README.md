@@ -13,11 +13,9 @@ section below details the modifications made subsequent to the fork. In summary:
 4. A Goal Oriented Behavior AI player option was added to allow automated gameplay. Think of this as a very simple platform for experimenting with game AI.
 
 ## Requirements
-
 - pyGameAIFoundation>=0.1.1: [GitHub](https://github.com/KevinRGeurts/pyGameAIFoundation), [PyPi](https://pypi.org/project/pyGameAIFoundation/)
 
 ## Change Log
-
 April-December, 2025 (Kevin R. Geurts, kevin.r.geurts@gmail.com)
 
 1. Updated startrek.py for Python 3.x: Print is a now a function and not a statement and requres ().
@@ -39,9 +37,18 @@ April-December, 2025 (Kevin R. Geurts, kevin.r.geurts@gmail.com)
 13. In startrek.py, fixed bug in initialize_game() that caused there to be a far more starbases present in the galaxy than intended.
 	 Updated unittest in test_startrek.py to assert that this is not happening.
 14. In startrek.py, added sector coordinate numbers to short range scan print.
+15. In startrek.py, fixed bug where it was possible to adjust shield energy when shield control was damaged.
+16. In startrek.py, functions for short range scan, long range scan, phaser control, torpedo control, shield control, and navigation were refactored to separate where possible precheck, input, and execution, and to capture output in a list of strings. This is prep work for implementing game play AI or a GUI.
+17. Added GameOptions class to retain game options set by command line arguments. 
+18. Created glob_vars.py to instantiate global Game() and GameOptions(). Quadrant and Game class definitions moved out of startrek.py to quadrant.py and game.py.
+19. In startrek.py, \_navigation(...) now returns a boolean indicating if an obstacle was encountered.
+20. In utilities.py, created StarTrekCourse class to represent direction in Star Trek navigation, and allowing addition/subtraction to adjust direction.
+21. In startrek.py, \_phaser_controls_fire(...) now returns number of klingon ships destroyed. And \_torpedo_control_launch(...) now returns booleans indicateding if torpedo missed everything and if torpedo was captured by star.   
+22. In startrek.py, added setup of logging, and /log option to log navigation data for debugging purposes.
+23. In game.py, added GameOptions.cheat_no_damage, set to True by /no_damage command line argument.
+24. In startrek.py, added a "/ai" command line option to __main__ to call run(game_ai=True). This triggers playing the game with a Goal Oriented Behavior AI player. Files startrek_actions.py and startrek_goals.py were created to implement the AI player behavior. world_interface.py was created to provide an interface for the AI player to access game state.
 
 ## Improvements
-
 In addition to potential improvements listed for the original project, here are some more ideas: 
 
 1. Add additional "cheat codes" as command line arguments: infinite energy, infinite torpedos, stronger phasers.
@@ -50,16 +57,21 @@ In addition to potential improvements listed for the original project, here are 
 4. Wormhole with entry/exit in two different quadrants, that provides instant, no energy passage from one quadrant to the other when Enterprise "docks" or "collides" with it. Could have a random risk of damaging Enterprise.
 5. Display torpedo track as "." on short range scan, instead of as a list of sector coordinates.
 
-## Basic usage
-
-The simplest way to run the game is:
-
+## Usage - Interactive Game Play
+To run the game and play interactively:
 ```
 python .\startrek.py
 ```
 
-## Unittests
+## Usage - AI Automatic Game Play
+To run the game so that it plays automatically with the Goal Oriented Behavior AI player:
+```
+python .\startrek.py /ai
+```
+Note that currently, in most cases this will produce an error before the game ends, as this is still a work in progres.
+However, also adding the /d flag will seed the random number generator in a way that allows the AI to play a complete game that ends when all Klingon ships are destroyed.
 
+## Unittests
 Unittests for pyStarTrek have filenames starting with test_. To run the unittests,
 type ```python -m unittest discover -s . -v``` in a terminal window in the project directory.
 
