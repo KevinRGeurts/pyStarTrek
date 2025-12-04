@@ -34,7 +34,7 @@ Change Log
 April-December, 2025 (Kevin R. Geurts, kevin.r.geurts@gmail.com)
 
 In the list below, items marked {ai} are additions or refactors made to facilitate future addition of AI-driven, automatic game play.
-Items marked {gui} are additions or refactore made to facilitate future additon of a GUI.
+Items marked {gui} are additions or refactors made to facilitate future additon of a GUI.
 
 (1)	Updated startrek.py for Python 3.x: Print is a now a function and not a statement and requres ().
 (2) Updated startrek.py for Python 3.x: raw_input() is now input().
@@ -48,26 +48,26 @@ Items marked {gui} are additions or refactore made to facilitate future additon 
 (8) In startrek.py, fixed bug that Game.starbase_x and Game.starbase_y were not set to 0 in initialize_game().
 (9) In startrek.py, added support for /d flag to __main__ to trigger a DEBUG mode which consistently seeds the random number generator.
 	This is helpful in testing.
-(10) In test_startrek.py, test_quadrant.py, and test_utilities.py created a total of 105 passing unittests.
-(11) In startrek.py, added hint to request for navigation course to indicated up, down, left, right meaning of course number.
-(12) In startrek.py, added hint to request for photon torpedo firing direction to indicate up, down, left, right meaning of numeric direction.
-(13) In startrek.py, fixed bug in initialize_game() that caused there to be a far more starbases present in the galaxy than intended.
+(10) Moved the "game" variable in startrek.py to "the_game" in glob_vars.py.
+(11) Moved Quadrant and Game classes out of glob_vars.py and into quadrant.py and game.py.
+(12) Moved four functions that don't access the game state out of startrek.py and into utilities.py. For example, distance(). Added doc strings to utilities.py.
+(13) In test_startrek.py, test_quadrant.py, and test_utilities.py created a total of 105 passing unittests.
+(14) In startrek.py, added hint to request for navigation course to indicated up, down, left, right meaning of course number.
+(15) In startrek.py, added hint to request for photon torpedo firing direction to indicate up, down, left, right meaning of numeric direction.
+(16) In startrek.py, fixed bug in initialize_game() that caused there to be a far more starbases present in the galaxy than intended.
 	 Updated unittest in test_startrek.py to assert that this is not happening.
-(14) In startrek.py, added sector coordinate numbers to short range scan print.
-(15) In startrek.py, fixed bug that allowed shield energy to be adjusted when shield control was damaged.
-(16) {gui}{ai} In startrek.py, short range scan, long range scan, phaser control, torpedo control, shield control, and navigation all modified to
+(17) In startrek.py, added sector coordinate numbers to short range scan print.
+(18) In startrek.py, fixed bug that allowed shield energy to be adjusted when shield control was damaged.
+(19) {gui}{ai} In startrek.py, short range scan, long range scan, phaser control, torpedo control, shield control, and navigation all modified to
 	 separate prechecks, input, and execution, and to capture output into list of strings, in preparation for either
 	 capturing output for GUI or driving game play through AI.
-(17) Moved the "game" variable in startrek.py to "the_game" in glob_vars.py.
-(18) Moved Quadrant and Game classes out of glob_vars.py and into quadrant.py and game.py.
-(19) Moved four functions that don't access the game state out of startrek.py and into utilities.py. For example, distance(). Added doc strings to utilities.py.
 (20) {ai} In startrek.py, refactored display_galactic_record() to use _fetch_galactic_record().
 (21) {gui}{ai} In startrek.py, refactored induce_damage(...) to return a list of strings to be printed.
 (22) {ai} In startrek.py, startrek._navigation(...) now returns a boolean indicating if an obstacle was encountered.
 (23) {ai} In utilities.py, created StarTrekCourse class to represent direction in Star Trek navigation, and allowing addition/subtraction to adjust direction. 
 (24) {ai} In startrek.py, _phaser_controls_fire(...) now returns number of klingon ships destroyed, and _torpedo_control_launch(...) now returns booleans indicateding
      if torpedo missed everything and if torpedo was captured by star.
-(25) In startrek.py and game.py added python logging, and /log option to log navigation data for debugging purposes.
+(25) In startrek.py and game.py added python logging, and /log command line option to log navigation data for debugging purposes.
 (26) Added GameOptions class to retain game options set by command line arguments.
 (27) Added GameOptions.cheat_no_damage, set to True by /no_damage command line argument.
 
